@@ -228,6 +228,23 @@ button{cursor:pointer;border:none;background:none;}
 .note-card{background:#FEF3E5;border:1.5px solid rgba(245,118,26,0.3);border-radius:var(--radius-md);padding:12px 16px;margin-bottom:12px;font-size:13px;color:var(--grey-dark);line-height:1.5;}
 .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .action-grid .btn-primary{grid-column:1/-1;}
+/* Specs card */
+.specs-card{background:var(--white);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);margin-bottom:12px;}
+.specs-header{display:flex;align-items:center;padding:14px 16px;cursor:pointer;gap:10px;-webkit-user-select:none;user-select:none;}
+.specs-header-icon{width:32px;height:32px;background:var(--black);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.specs-title{font-size:14px;font-weight:700;color:var(--charcoal);flex:1;}
+.specs-count{font-size:13px;font-weight:700;color:var(--orange);background:rgba(245,118,26,0.10);border-radius:20px;padding:3px 10px;white-space:nowrap;}
+.specs-chevron{color:var(--grey);font-size:12px;transition:transform var(--transition);}
+.specs-chevron.open{transform:rotate(180deg);}
+.specs-body{border-top:1px solid var(--grey-light);}
+.spec-row{padding:12px 16px;border-bottom:1px solid var(--grey-light);}
+.spec-row:last-child{border-bottom:none;}
+.spec-row-label{font-size:12px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;}
+.spec-seg{display:flex;background:var(--grey-pale);border-radius:8px;padding:3px;gap:3px;}
+.spec-seg-btn{flex:1;height:36px;border-radius:6px;font-size:13px;font-weight:600;color:var(--grey);transition:all var(--transition);}
+.spec-seg-btn.active{background:var(--white);color:var(--charcoal);box-shadow:var(--shadow-sm);font-weight:700;}
+.spec-seg-btn.warn{color:var(--red);}
+.spec-warn{background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;padding:8px 12px;font-size:12px;color:var(--red);margin-top:8px;line-height:1.5;}
 
 /* Animations */
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -416,11 +433,14 @@ const APP = {
   quotes: [],
   markup: 0.30,
   labourRate: 55,
+  specsOpen: false,
+  specs: { postSpacing:'auto', postType:'timber', bearerOvr:null, joistOvr:null },
   prices: {
     'ekodeck-classic': 18.50, 'ekodeck-plus': 24.90,
     'merbau': 12.80, 'spotted-gum': 14.50, 'blackbutt': 13.20,
     'timber-90x45': 8.40, 'timber-140x45': 12.20, 'timber-190x45': 16.80,
     'post-90x90': 11.50, 'post-140x140': 22.00,
+    'metal-stump': 42.00,
     'joist-hanger': 2.80, 'post-base': 14.50, 'screws-box': 18.00,
   },
   sketch: { points:[], segments:[], closed:false, area:0, perimeter:0, scale:null, pendingPoint:null }
@@ -468,6 +488,8 @@ function renderQuotesList() {
 }
 function startNewQuote() {
   APP.currentQuote = { id:'q_'+Date.now(), client:{}, deck:null, height:null, material:null, pricing:null, total:null, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
+  APP.specs = { postSpacing:'auto', postType:'timber', bearerOvr:null, joistOvr:null };
+  APP.specsOpen = false;
   resetSketch(); clearClientForm(); navigateTo('client');
 }
 function openQuote(id) {
@@ -739,23 +761,97 @@ function estimateDims(segments,area){
   if(lens.length===4)return{w:(lens[0]+lens[1])/2,l:(lens[2]+lens[3])/2};
   return{w:lens[0],l:lens[lens.length-1]};
 }
+
+// Convert stored canvas-pixel polygon to metre coordinates
+function deckPolyMetres(deck){
+  if(!deck||!deck.points||!deck.segments||!deck.segments.length)return null;
+  const p0=deck.points[0],p1=deck.points[1];
+  const px=Math.hypot(p1.x-p0.x,p1.y-p0.y),mx=deck.segments[0].length;
+  if(!px||!mx)return null;
+  const sc=px/mx,minX=Math.min(...deck.points.map(p=>p.x)),minY=Math.min(...deck.points.map(p=>p.y));
+  return deck.points.map(p=>[(p.x-minX)/sc,(p.y-minY)/sc]);
+}
+// Ray-casting point-in-polygon
+function pip(px,py,poly){
+  let inside=false;const n=poly.length;
+  for(let i=0,j=n-1;i<n;j=i++){
+    const xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];
+    if(((yi>py)!==(yj>py))&&(px<(xj-xi)*(py-yi)/(yj-yi)+xi))inside=!inside;
+  }
+  return inside;
+}
+// Count post grid positions that fall inside (or on) the deck polygon
+function countPostsInPoly(deck,postSpM){
+  const poly=deckPolyMetres(deck);
+  if(!poly)return null;
+  const maxX=Math.max(...poly.map(p=>p[0])),maxY=Math.max(...poly.map(p=>p[1]));
+  let n=0;
+  for(let xi=0;xi*postSpM<=maxX+0.05;xi++)
+    for(let yi=0;yi*postSpM<=maxY+0.05;yi++)
+      if(pip(xi*postSpM,yi*postSpM,poly))n++;
+  return Math.max(n,4); // minimum 4 corner posts
+}
+// ─ Span tables (AS 1684, SA residential) ─
+const JOIST_SPANS = {90:{300:1800,450:1500},140:{300:2400,450:2100},190:{300:3000,450:2700}};
+const BEARER_SPANS = {'90x45':1200,'140x45':1800,'190x45':2400};
+
 function joistSizeFor(spanMm,spacMm){
-  const t={90:{300:1800,450:1500},140:{300:2400,450:2100},190:{300:3000,450:2700}};
-  for(const sz of[90,140,190]){if(spanMm<=(t[sz][spacMm]||t[sz][450]))return sz+'x45';}
+  for(const sz of[90,140,190]){if(spanMm<=(JOIST_SPANS[sz][spacMm]||JOIST_SPANS[sz][450]))return sz+'x45';}
   return '190x45';
 }
 function bearerSizeFor(spanMm){
   if(spanMm<=1200)return'90x45';if(spanMm<=1800)return'140x45';return'190x45';
 }
+
+// Find largest post spacing that both bearer and joist can handle
+function autoOptimize(jSpac, bearOvr, joistOvr){
+  for(const sp of[2.4,2.1,1.8,1.5,1.2]){
+    const spMm=sp*1000;
+    const bSize=bearOvr||bearerSizeFor(spMm);
+    if(spMm>BEARER_SPANS[bSize])continue;
+    const jSize=joistOvr||joistSizeFor(spMm,jSpac);
+    const jMax=(JOIST_SPANS[parseInt(jSize)]||{})[jSpac]||(JOIST_SPANS[parseInt(jSize)]||{})[450]||0;
+    if(spMm>jMax)continue;
+    return{sp,bSize,jSize};
+  }
+  return{sp:1.2,bSize:'190x45',jSize:'190x45'};
+}
+
+function specWarnings(bSize,jSize,postSpM,jSpac){
+  const spMm=postSpM*1000,warns=[];
+  if(spMm>BEARER_SPANS[bSize])warns.push(bSize+' bearer max span is '+BEARER_SPANS[bSize]+'mm — increase bearer size or reduce post spacing');
+  const jMax=(JOIST_SPANS[parseInt(jSize)]||{})[jSpac]||(JOIST_SPANS[parseInt(jSize)]||{})[450]||0;
+  if(spMm>jMax)warns.push(jSize+' joist max span is '+jMax+'mm at '+jSpac+'mm ctrs — increase joist size or reduce post spacing');
+  return warns;
+}
+
 function computeQuote(){
   const q=APP.currentQuote,{deck,height,material}=q,{area,segments,perimeter}=deck;
   const dims=estimateDims(segments,area),deckW=Math.min(dims.w,dims.l),deckL=Math.max(dims.w,dims.l);
   const isComp=['ekodeck-classic','ekodeck-plus'].includes(material);
-  const jSpac=isComp?300:450,postSpM=1.8;
-  const jSize=joistSizeFor(postSpM*1000,jSpac),bSize=bearerSizeFor(postSpM*1000);
-  const postKey=height<=1.0?'post-90x90':'post-140x140',postLabel=height<=1.0?'90×90mm H4':'140×140mm H4';
-  const nPostW=Math.ceil(deckW/postSpM)+1,nPostL=Math.ceil(deckL/postSpM)+1,nPosts=nPostW*nPostL;
-  const postLm=height+0.45,postTotal=nPosts*postLm;
+  const jSpac=isComp?300:450;
+  const sp=APP.specs;
+
+  // Resolve post spacing + timber sizes (auto-optimize or honour overrides)
+  let postSpM,jSize,bSize;
+  if(sp.postSpacing==='auto'){
+    const opt=autoOptimize(jSpac,sp.bearerOvr,sp.joistOvr);
+    postSpM=opt.sp;bSize=opt.bSize;jSize=opt.jSize;
+  } else {
+    postSpM=parseFloat(sp.postSpacing);
+    bSize=sp.bearerOvr||bearerSizeFor(postSpM*1000);
+    jSize=sp.joistOvr||joistSizeFor(postSpM*1000,jSpac);
+  }
+
+  // Stump type
+  const isMetal=sp.postType==='metal';
+  const postLabel=isMetal?'Metal Adjustable Stump':(height<=1.0?'90×90mm H4':'140×140mm H4');
+  const postKey=isMetal?'metal-stump':(height<=1.0?'post-90x90':'post-140x140');
+
+  // Quantities — post count from actual polygon, not rectangular grid
+  const nPosts=countPostsInPoly(deck,postSpM)||(Math.ceil(deckW/postSpM)+1)*(Math.ceil(deckL/postSpM)+1);
+  const nPostW=Math.round(Math.sqrt(nPosts*(deckW/deckL)));
+  const postLm=height+0.45; // timber post length (not used for metal)
   const nBearerRows=nPostW,bearerTotal=nBearerRows*deckL*1.05;
   const nJoists=Math.ceil(deckL/(jSpac/1000))+1,joistTotal=nJoists*deckW*1.05;
   const rimLm=perimeter*1.1;
@@ -763,64 +859,141 @@ function computeQuote(){
   const deckLm=(area/brdW)*1.12;
   const nHangers=nJoists*2,screwBoxes=Math.ceil(deckLm/20);
   const p=APP.prices,jKey='timber-'+jSize,bKey='timber-'+bSize;
+
   const items=[
-    {label:'Decking — '+materialLabel(material),           detail:deckLm.toFixed(1)+' lm',           cost:deckLm*(p[material]||0)},
-    {label:'Joists — '+jSize+' MGP10 H3',                 detail:joistTotal.toFixed(1)+' lm @ '+jSpac+'mm ctrs', cost:joistTotal*(p[jKey]||0)},
-    {label:'Rim Joists — '+jSize+' MGP10 H3',             detail:rimLm.toFixed(1)+' lm',             cost:rimLm*(p[jKey]||0)},
-    {label:'Bearers — '+bSize+' MGP10 H3',                detail:bearerTotal.toFixed(1)+' lm ('+nBearerRows+' rows)',cost:bearerTotal*(p[bKey]||0)},
-    {label:'Posts — '+postLabel,                           detail:nPosts+' posts × '+postLm.toFixed(2)+'m',cost:postTotal*(p[postKey]||0)},
-    {label:'Post Bases — Galvanised',                      detail:nPosts+' off',                      cost:nPosts*(p['post-base']||0)},
-    {label:'Joist Hangers — Galvanised',                   detail:nHangers+' off',                    cost:nHangers*(p['joist-hanger']||0)},
-    {label:'Fixings & Screws',                             detail:screwBoxes+' box'+(screwBoxes>1?'es':''),cost:screwBoxes*(p['screws-box']||0)},
+    {label:'Decking — '+materialLabel(material),  detail:deckLm.toFixed(1)+' lm',  cost:deckLm*(p[material]||0)},
+    {label:'Joists — '+jSize+' MGP10 H3',          detail:joistTotal.toFixed(1)+' lm @ '+jSpac+'mm ctrs', cost:joistTotal*(p[jKey]||0)},
+    {label:'Rim Joists — '+jSize+' MGP10 H3',      detail:rimLm.toFixed(1)+' lm',  cost:rimLm*(p[jKey]||0)},
+    {label:'Bearers — '+bSize+' MGP10 H3',         detail:bearerTotal.toFixed(1)+' lm ('+nBearerRows+' rows)', cost:bearerTotal*(p[bKey]||0)},
+    {label:isMetal?'Metal Adjustable Stumps':'Posts — '+postLabel,
+     detail:isMetal?nPosts+' stumps':nPosts+' × '+postLm.toFixed(2)+'m',
+     cost:isMetal?nPosts*(p['metal-stump']||0):nPosts*postLm*(p[postKey]||0)},
   ];
+  if(!isMetal)items.push({label:'Post Bases — Galvanised',detail:nPosts+' off',cost:nPosts*(p['post-base']||0)});
+  items.push(
+    {label:'Joist Hangers — Galvanised',detail:nHangers+' off',cost:nHangers*(p['joist-hanger']||0)},
+    {label:'Fixings & Screws',detail:screwBoxes+' box'+(screwBoxes>1?'es':''),cost:screwBoxes*(p['screws-box']||0)},
+  );
+
   const matCost=items.reduce((s,i)=>s+i.cost,0);
   const labourCost=area*APP.labourRate;
   const sub=matCost+labourCost,mkAmt=sub*APP.markup,exGST=sub+mkAmt,gst=exGST*0.10,total=exGST+gst;
   const notes=[];
   if(height>2.5)notes.push('Engineer certification required for decks above 2.5m in SA');
   if(height>1.0)notes.push('Check council permit requirements for elevated decks');
-  return{items,materialsCost:matCost,labourCost,subtotal:sub,markupAmt:mkAmt,totalExGST:exGST,gst,totalIncGST:total,jSize,bSize,postLabel,joistSpacingMm:jSpac,nPosts,nJoists,deckW,deckL,area,perimeter,notes};
+  specWarnings(bSize,jSize,postSpM,jSpac).forEach(w=>notes.push('Spec: '+w));
+  return{items,materialsCost:matCost,labourCost,subtotal:sub,markupAmt:mkAmt,totalExGST:exGST,gst,totalIncGST:total,jSize,bSize,postLabel,joistSpacingMm:jSpac,nPosts,nJoists,deckW,deckL,area,perimeter,notes,postSpM,isMetal};
 }
 
 // ═══ RENDER QUOTE ═══
-function renderQuoteScreen(pricing){
+function specsCardHTML(pr){
+  const sp=APP.specs;
+  const warns=specWarnings(pr.bSize,pr.jSize,pr.postSpM,pr.joistSpacingMm);
+
+  function seg(opts,active,fn){
+    return '<div class="spec-seg">'+opts.map(([v,lbl])=>{
+      const iA=v===active;
+      const isWarn=warns.length&&!iA&&v!=='auto'&&fn.toString().includes('Bearer')&&v===sp.bearerOvr;
+      return '<button class="spec-seg-btn'+(iA?' active':'')+(isWarn?' warn':'')+'" onclick="'+fn+'(\''+v+'\')">'+lbl+'</button>';
+    }).join('')+'</div>';
+  }
+
+  const spActive=sp.postSpacing;
+  const bActive=sp.bearerOvr||'auto';
+  const jActive=sp.joistOvr||'auto';
+
+  let html='<div class="specs-card">';
+  html+='<div class="specs-header" onclick="toggleSpecs()">';
+  html+='<div class="specs-header-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>';
+  html+='<div class="specs-title">Subframe Specs</div>';
+  html+='<div class="specs-count">'+pr.nPosts+' stumps · '+pr.postSpM+'m grid</div>';
+  html+='<svg class="specs-chevron'+(APP.specsOpen?' open':'')+'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+  html+='</div>';
+
+  if(APP.specsOpen){
+    html+='<div class="specs-body">';
+    // Stump type
+    html+='<div class="spec-row"><div class="spec-row-label">Stump type</div>';
+    html+='<div class="spec-seg">';
+    html+='<button class="spec-seg-btn'+(sp.postType==='timber'?' active':'')+'" onclick="setPostType(\'timber\')">Timber H4</button>';
+    html+='<button class="spec-seg-btn'+(sp.postType==='metal'?' active':'')+'" onclick="setPostType(\'metal\')">Metal Adjustable</button>';
+    html+='</div></div>';
+    // Post spacing
+    html+='<div class="spec-row"><div class="spec-row-label">Post spacing</div>';
+    html+='<div class="spec-seg">';
+    [['auto','Auto'],['1.2','1.2m'],['1.5','1.5m'],['1.8','1.8m'],['2.1','2.1m'],['2.4','2.4m']].forEach(([v,lbl])=>{
+      const iA=spActive===v;
+      html+='<button class="spec-seg-btn'+(iA?' active':'')+'" onclick="setPostSpacing(\''+v+'\')">'+lbl+'</button>';
+    });
+    html+='</div>';
+    if(spActive!=='auto')html+='<div style="font-size:11px;color:var(--grey);margin-top:6px;padding:0 2px;">Auto-optimise picks the widest spacing that satisfies span tables — fewer stumps, less digging.</div>';
+    html+='</div>';
+    // Bearer
+    html+='<div class="spec-row"><div class="spec-row-label">Bearer size</div>';
+    html+='<div class="spec-seg">';
+    [['auto','Auto'],['90x45','90×45'],['140x45','140×45'],['190x45','190×45']].forEach(([v,lbl])=>{
+      const iA=bActive===v;
+      html+='<button class="spec-seg-btn'+(iA?' active':'')+'" onclick="setBearerOvr(\''+v+'\')">'+lbl+'</button>';
+    });
+    html+='</div></div>';
+    // Joist
+    html+='<div class="spec-row"><div class="spec-row-label">Joist size</div>';
+    html+='<div class="spec-seg">';
+    [['auto','Auto'],['90x45','90×45'],['140x45','140×45'],['190x45','190×45']].forEach(([v,lbl])=>{
+      const iA=jActive===v;
+      html+='<button class="spec-seg-btn'+(iA?' active':'')+'" onclick="setJoistOvr(\''+v+'\')">'+lbl+'</button>';
+    });
+    html+='</div></div>';
+    // Warnings
+    if(warns.length)warns.forEach(w=>{html+='<div class="spec-row"><div class="spec-warn">⚠ '+w+'</div></div>';});
+    html+='</div>';
+  }
+  html+='</div>';
+  return html;
+}
+
+function renderQuoteScreen(pr){
   const q=APP.currentQuote,c=q.client;
   const initials=((c.firstName||'?')[0]+(c.surname||'?')[0]).toUpperCase();
   let html='<div class="quote-client-bar fade-in"><div class="qcb-avatar">'+initials+'</div><div class="qcb-info"><div class="qcb-name">'+c.firstName+' '+c.surname+'</div><div class="qcb-address">'+c.address+'</div></div></div>';
   html+='<div class="deck-specs-row fade-in">';
-  html+='<div class="spec-chip"><div class="spec-chip-value">'+pricing.area.toFixed(1)+'</div><div class="spec-chip-label">m² Area</div></div>';
-  html+='<div class="spec-chip"><div class="spec-chip-value">'+pricing.deckL.toFixed(1)+'×'+pricing.deckW.toFixed(1)+'</div><div class="spec-chip-label">Metres</div></div>';
+  html+='<div class="spec-chip"><div class="spec-chip-value">'+pr.area.toFixed(1)+'</div><div class="spec-chip-label">m² Area</div></div>';
+  html+='<div class="spec-chip"><div class="spec-chip-value">'+pr.deckL.toFixed(1)+'×'+pr.deckW.toFixed(1)+'</div><div class="spec-chip-label">Metres</div></div>';
   html+='<div class="spec-chip"><div class="spec-chip-value">'+q.height+'m</div><div class="spec-chip-label">Height</div></div>';
   html+='</div>';
   html+='<div class="line-items-card fade-in fade-in-delay-1"><div class="li-section-head"><div class="li-section-head-text">Materials & Subframe</div></div>';
-  pricing.items.forEach(item=>{
+  pr.items.forEach(item=>{
     html+='<div class="li-row"><div class="li-left"><div class="li-label">'+item.label+'</div><div class="li-detail">'+item.detail+'</div></div><div class="li-cost">'+fmt(item.cost)+'</div></div>';
   });
   html+='</div>';
+  html+=specsCardHTML(pr);
   html+='<div class="totals-card fade-in fade-in-delay-2">';
-  html+='<div class="labour-row"><div class="labour-label">Labour rate</div><input class="labour-input" type="number" id="labourRateInput" value="'+APP.labourRate+'" min="0" max="200" oninput="updateLabourRate(this.value)"><div class="labour-unit">/m² × '+pricing.area.toFixed(1)+' m²</div></div>';
-  html+='<div class="totals-row"><div class="totals-label">Materials</div><div class="totals-value" id="qt-materials">'+fmt(pricing.materialsCost)+'</div></div>';
-  html+='<div class="totals-row"><div class="totals-label">Labour</div><div class="totals-value" id="qt-labour">'+fmt(pricing.labourCost)+'</div></div>';
+  html+='<div class="labour-row"><div class="labour-label">Labour rate</div><input class="labour-input" type="number" id="labourRateInput" value="'+APP.labourRate+'" min="0" max="200" oninput="updateLabourRate(this.value)"><div class="labour-unit">/m² × '+pr.area.toFixed(1)+' m²</div></div>';
+  html+='<div class="totals-row"><div class="totals-label">Materials</div><div class="totals-value">'+fmt(pr.materialsCost)+'</div></div>';
+  html+='<div class="totals-row"><div class="totals-label">Labour</div><div class="totals-value">'+fmt(pr.labourCost)+'</div></div>';
   html+='<div class="markup-control-row"><div class="markup-label">Margin</div><div class="markup-value-display" id="qt-markup-pct">'+Math.round(APP.markup*100)+'%</div></div>';
   html+='<input class="markup-slider" type="range" min="0" max="60" step="5" value="'+Math.round(APP.markup*100)+'" oninput="updateMarkup(this.value)">';
-  html+='<div class="totals-row"><div class="totals-label">Total (ex GST)</div><div class="totals-value" id="qt-exgst">'+fmt(pricing.totalExGST)+'</div></div>';
-  html+='<div class="totals-row"><div class="totals-label">GST (10%)</div><div class="totals-value" id="qt-gst">'+fmt(pricing.gst)+'</div></div>';
-  html+='<div class="totals-row grand"><div class="totals-label">TOTAL inc GST</div><div class="totals-value" id="qt-total">'+fmt(pricing.totalIncGST)+'</div></div>';
+  html+='<div class="totals-row"><div class="totals-label">Total (ex GST)</div><div class="totals-value">'+fmt(pr.totalExGST)+'</div></div>';
+  html+='<div class="totals-row"><div class="totals-label">GST (10%)</div><div class="totals-value">'+fmt(pr.gst)+'</div></div>';
+  html+='<div class="totals-row grand"><div class="totals-label">TOTAL inc GST</div><div class="totals-value">'+fmt(pr.totalIncGST)+'</div></div>';
   html+='</div>';
-  if(pricing.notes.length)pricing.notes.forEach(n=>{html+='<div class="note-card">⚠️ '+n+'</div>';});
+  if(pr.notes.length)pr.notes.forEach(n=>{html+='<div class="note-card">⚠️ '+n+'</div>';});
   document.getElementById('quoteScreenBody').innerHTML=html;
 }
+
 function fmt(n){return '$'+(n||0).toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function updateLabourRate(v){APP.labourRate=parseFloat(v)||0;refreshTotals();}
-function updateMarkup(v){APP.markup=v/100;document.getElementById('qt-markup-pct').textContent=v+'%';refreshTotals();}
-function refreshTotals(){
+function updateLabourRate(v){APP.labourRate=parseFloat(v)||0;rerender();}
+function updateMarkup(v){APP.markup=v/100;rerender();}
+function toggleSpecs(){APP.specsOpen=!APP.specsOpen;rerender();}
+function setPostType(v){APP.specs.postType=v;rerender();}
+function setPostSpacing(v){APP.specs.postSpacing=v;rerender();}
+function setBearerOvr(v){APP.specs.bearerOvr=v==='auto'?null:v;rerender();}
+function setJoistOvr(v){APP.specs.joistOvr=v==='auto'?null:v;rerender();}
+function rerender(){
   const pr=computeQuote();APP.currentQuote.pricing=pr;APP.currentQuote.total=pr.totalIncGST;saveCurrentQuote();
-  document.getElementById('qt-materials').textContent=fmt(pr.materialsCost);
-  document.getElementById('qt-labour').textContent=fmt(pr.labourCost);
-  document.getElementById('qt-exgst').textContent=fmt(pr.totalExGST);
-  document.getElementById('qt-gst').textContent=fmt(pr.gst);
-  document.getElementById('qt-total').textContent=fmt(pr.totalIncGST);
+  renderQuoteScreen(pr);
 }
+function refreshTotals(){rerender();}
 
 // ═══ DIAGRAM PAGES ═══
 function buildDiagrams(q, p, LOGO) {
@@ -851,7 +1024,7 @@ function buildDiagrams(q, p, LOGO) {
   const svgPts=pts.map(toSV);
   const polyPts=svgPts.map(([x,y])=>x.toFixed(1)+','+y.toFixed(1)).join(' ');
 
-  const postSpM=1.8, joistSpM=p.joistSpacingMm/1000;
+  const postSpM=p.postSpM||1.8, joistSpM=p.joistSpacingMm/1000;
 
   // ── Subframe elements (all clipped to polygon) ──
   let bearSVG='',joistSVG='',postSVG='';
