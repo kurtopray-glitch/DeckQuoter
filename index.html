@@ -754,21 +754,24 @@ function redrawCanvas(){
   // Angle labels at each vertex (shown when shape closed or during drag)
   if((sk.closed||sk.drag)&&sk.points.length>=3){
     const pts=sk.points,n=pts.length;
-    let sa2=0;for(let i=0;i<n;i++){const j=(i+1)%n;sa2+=pts[i].x*pts[j].y-pts[j].x*pts[i].y;}
     for(let i=0;i<n;i++){
       const prev=pts[(i-1+n)%n],curr=pts[i],next=pts[(i+1)%n];
       const v1x=prev.x-curr.x,v1y=prev.y-curr.y,v2x=next.x-curr.x,v2y=next.y-curr.y;
       const len1=Math.hypot(v1x,v1y),len2=Math.hypot(v2x,v2y);
       if(!len1||!len2)continue;
       const cosA=(v1x*v2x+v1y*v2y)/(len1*len2);
-      let deg=Math.round(Math.acos(Math.max(-1,Math.min(1,cosA)))*180/Math.PI);
-      const cross=v1x*v2y-v1y*v2x;
-      if(sa2>0?cross<0:cross>0)deg=360-deg; // reflex vertex
-      // Position: offset toward interior (bisector direction)
+      const deg=Math.round(Math.acos(Math.max(-1,Math.min(1,cosA)))*180/Math.PI); // always ≤180°
+      const cross=v1x*v2y-v1y*v2x; // determines which arc sweep is the smaller angle
+      // Bisector direction (into the smaller angle between the two edges)
       const bx=v1x/len1+v2x/len2,by=v1y/len1+v2y/len2;
       const blen=Math.hypot(bx,by)||1;
-      const lx=curr.x+bx/blen*34,ly=curr.y+by/blen*34;
+      // Subtle arc between the two edge directions
+      const arcR=22,a1=Math.atan2(v1y,v1x),a2=Math.atan2(v2y,v2x);
       ctx.save();
+      ctx.beginPath();ctx.arc(curr.x,curr.y,arcR,a1,a2,cross<0);
+      ctx.strokeStyle='rgba(245,118,26,0.5)';ctx.lineWidth=1.8;ctx.setLineDash([]);ctx.stroke();
+      // Label badge offset along bisector
+      const lx=curr.x+bx/blen*38,ly=curr.y+by/blen*38;
       ctx.fillStyle='rgba(245,118,26,0.92)';
       ctx.beginPath();ctx.roundRect(lx-22,ly-11,44,22,5);ctx.fill();
       ctx.fillStyle='#FFF';ctx.font='bold 11px -apple-system,system-ui,sans-serif';
