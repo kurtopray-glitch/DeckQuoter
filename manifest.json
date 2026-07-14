@@ -1,11 +1,11 @@
 {
-  "name": "DeckQuote",
-  "short_name": "DeckQuote",
-  "description": "Professional deck quoting tool for builders",
+  "name": "PdP Quote",
+  "short_name": "PdP Quote",
+  "description": "Professional deck quoting tool — Paul's Decking & Pergolas",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#1B4332",
-  "theme_color": "#1B4332",
+  "background_color": "#1A1A1A",
+  "theme_color": "#1A1A1A",
   "orientation": "portrait",
   "icons": [
     {
