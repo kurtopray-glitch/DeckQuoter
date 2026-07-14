@@ -927,7 +927,11 @@ function getPostPositions(deck,postSpM){
   for(let yi=0;yi*postSpM<=maxY+0.05;yi++) rows.add(+(yi*postSpM).toFixed(9));
   rows.add(+maxY.toFixed(9));
   for(const y of [...rows].sort((a,b)=>a-b)){
-    const xs=polyXsAtY(poly,y).sort((a,b)=>a-b);
+    const xs=polyXsAtY(poly,y);
+    // Also capture polygon vertices near this bearer row (handles slightly
+    // tilted edges in hand-drawn polygons where polyXsAtY misses one side)
+    for(const[vx,vy]of poly) if(Math.abs(vy-y)<thresh*0.5) xs.push(vx);
+    xs.sort((a,b)=>a-b);
     if(xs.length<2)continue;
     const xMin=xs[0],xMax=xs[xs.length-1];
     add(xMin,y); add(xMax,y); // boundary posts — always required
@@ -1123,7 +1127,7 @@ function renderQuoteScreen(pr){
   html+='<div class="labour-row"><div class="labour-label">Labour rate</div><input class="labour-input" type="number" id="labourRateInput" value="'+APP.labourRate+'" min="0" max="200" oninput="updateLabourRate(this.value)"><div class="labour-unit">/m² × '+pr.area.toFixed(1)+' m²</div></div>';
   html+='<div class="totals-row"><div class="totals-label">Materials</div><div class="totals-value">'+fmt(pr.materialsCost)+'</div></div>';
   html+='<div class="totals-row"><div class="totals-label">Labour</div><div class="totals-value">'+fmt(pr.labourCost)+'</div></div>';
-  html+='<div class="markup-control-row"><div class="markup-label">Margin</div><div class="markup-value-display" id="qt-markup-pct">'+Math.round(APP.markup*100)+'%</div></div>';
+  html+='<div class="markup-control-row"><div class="markup-label">Margin</div><div class="markup-value-display" id="qt-markup-pct">'+Math.round(APP.markup*100)+'% <span style="color:#6B7280;font-size:13px;font-weight:500;">('+fmt(pr.markupAmt)+')</span></div></div>';
   html+='<input class="markup-slider" type="range" min="0" max="60" step="5" value="'+Math.round(APP.markup*100)+'" oninput="updateMarkup(this.value)">';
   html+='<div class="totals-row"><div class="totals-label">Total (ex GST)</div><div class="totals-value">'+fmt(pr.totalExGST)+'</div></div>';
   html+='<div class="totals-row"><div class="totals-label">GST (10%)</div><div class="totals-value">'+fmt(pr.gst)+'</div></div>';
