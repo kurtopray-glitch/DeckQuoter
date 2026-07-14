@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DeckQuote">
+<title>DeckQuote</title>
+<link rel="manifest" href="manifest.json">
+<style>
+/* ─── Design Tokens ─────────────────────────────────────────────────────── */
+:root {
+  --forest:       #1B4332;
+  --forest-mid:   #2D6A4F;
+  --forest-light: #40916C;
+  --gold:         #C9912B;
+  --gold-light:   #E9B44C;
+  --gold-pale:    #FDF3DC;
+  --cream:        #F7F4EF;
+  --white:        #FFFFFF;
+  --charcoal:     #1C1C1E;
+  --grey-dark:    #3A3A3C;
+  --grey:         #6B7280;
+  --grey-light:   #E5E7EB;
+  --grey-pale:    #F3F4F6;
+  --red:          #DC2626;
+  --green-ok:     #16A34A;
+
+  --radius-sm:    8px;
+  --radius-md:    14px;
+  --radius-lg:    20px;
+  --radius-xl:    28px;
+
+  --shadow-sm:    0 1px 4px rgba(0,0,0,0.08);
+  --shadow-md:    0 4px 16px rgba(0,0,0,0.10);
+  --shadow-lg:    0 8px 32px rgba(0,0,0,0.14);
+
+  --font:         -apple-system, 'SF Pro Display', system-ui, sans-serif;
+  --transition:   0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Reset & Base ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; background: var(--cream); font-family: var(--font); color: var(--charcoal); -webkit-font-smoothing: antialiased; }
+input, textarea, select, button { font-family: var(--font); outline: none; }
+button { cursor: pointer; border: none; background: none; }
+
+/* ─── App Shell ─────────────────────────────────────────────────────────── */
+#app { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ─── Screens ───────────────────────────────────────────────────────────── */
+.screen { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+.screen.active { display: flex; }
+
+/* ─── Header ────────────────────────────────────────────────────────────── */
+.app-header {
+  flex-shrink: 0;
+  background: var(--forest);
+  color: var(--white);
+  padding: env(safe-area-inset-top, 16px) 24px 0;
+  padding-top: max(env(safe-area-inset-top), 16px);
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+}
+.header-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.header-logo svg { width: 28px; height: 28px; }
+.header-brand { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--white); }
+.header-brand span { color: var(--gold-light); }
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gold-light);
+  font-size: 17px;
+  font-weight: 600;
+  padding: 8px 0;
+}
+.back-btn svg { width: 20px; height: 20px; }
+.header-action {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gold-light);
+  padding: 8px 0 8px 16px;
+}
+
+/* ─── Screen Body ───────────────────────────────────────────────────────── */
+.screen-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px 24px calc(env(safe-area-inset-bottom, 16px) + 24px);
+}
+.screen-body.padded-bottom { padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 120px); }
+
+/* ─── Typography ────────────────────────────────────────────────────────── */
+.display { font-size: 32px; font-weight: 800; line-height: 1.1; letter-spacing: -0.8px; color: var(--charcoal); }
+.title { font-size: 24px; font-weight: 700; line-height: 1.2; letter-spacing: -0.4px; }
+.subtitle { font-size: 17px; color: var(--grey); line-height: 1.5; margin-top: 6px; }
+.label { font-size: 13px; font-weight: 600; color: var(--grey); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+.caption { font-size: 14px; color: var(--grey); line-height: 1.5; }
+
+/* ─── Cards ─────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.card + .card { margin-top: 12px; }
+
+/* ─── Buttons ───────────────────────────────────────────────────────────── */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 62px;
+  border-radius: var(--radius-md);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  transition: transform var(--transition), opacity var(--transition);
+  -webkit-user-select: none;
+  user-select: none;
+}
+.btn:active { transform: scale(0.97); opacity: 0.9; }
+.btn-primary {
+  background: var(--gold);
+  color: var(--white);
+  box-shadow: 0 4px 16px rgba(201,145,43,0.35);
+}
+.btn-primary:active { background: var(--gold-light); }
+.btn-forest {
+  background: var(--forest);
+  color: var(--white);
+  box-shadow: 0 4px 16px rgba(27,67,50,0.25);
+}
+.btn-outline {
+  background: transparent;
+  color: var(--forest);
+  border: 2px solid var(--grey-light);
+  font-weight: 600;
+}
+.btn-ghost {
+  background: var(--grey-pale);
+  color: var(--grey-dark);
+  font-weight: 600;
+}
+.btn-danger { background: var(--red); color: var(--white); }
+.btn-sm { min-height: 48px; font-size: 15px; border-radius: var(--radius-sm); }
+.btn-icon { width: 52px; height: 52px; min-height: unset; width: unset; padding: 0 16px; border-radius: var(--radius-md); }
+.btn svg { flex-shrink: 0; }
+
+/* ─── Form Inputs ───────────────────────────────────────────────────────── */
+.form-group { margin-bottom: 20px; }
+.form-group:last-child { margin-bottom: 0; }
+.field-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--grey-dark);
+  margin-bottom: 8px;
+  display: block;
+}
+.field-input {
+  width: 100%;
+  height: 62px;
+  background: var(--grey-pale);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 0 18px;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--charcoal);
+  transition: border-color var(--transition), background var(--transition);
+  -webkit-appearance: none;
+  appearance: none;
+}
+.field-input:focus {
+  background: var(--white);
+  border-color: var(--forest-mid);
+  box-shadow: 0 0 0 4px rgba(45,106,79,0.12);
+}
+.field-input::placeholder { color: var(--grey); font-weight: 400; }
+.field-input.error { border-color: var(--red); background: #FEF2F2; }
+
+/* ─── Divider ───────────────────────────────────────────────────────────── */
+.divider { height: 1px; background: var(--grey-light); margin: 20px 0; }
+
+/* ─── Badge ─────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.badge-gold { background: var(--gold-pale); color: var(--gold); }
+.badge-forest { background: rgba(27,67,50,0.1); color: var(--forest-mid); }
+.badge-grey { background: var(--grey-pale); color: var(--grey); }
+
+/* ─── Progress Steps ────────────────────────────────────────────────────── */
+.progress-bar {
+  display: flex;
+  align-items: center;
+  padding: 14px 24px;
+  background: var(--forest);
+  border-top: 1px solid rgba(255,255,255,0.1);
+  gap: 0;
+}
+.progress-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+.progress-step::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: rgba(255,255,255,0.2);
+}
+.progress-step:last-child::after { display: none; }
+.progress-step.done::after { background: var(--gold); }
+.step-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.6);
+  position: relative;
+  z-index: 1;
+  transition: all var(--transition);
+}
+.progress-step.active .step-dot { background: var(--gold); color: var(--white); }
+.progress-step.done .step-dot { background: var(--gold); color: var(--white); }
+.step-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.5); letter-spacing: 0.3px; text-align: center; }
+.progress-step.active .step-label { color: var(--gold-light); }
+.progress-step.done .step-label { color: rgba(255,255,255,0.7); }
+
+/* ─── Sticky Footer ─────────────────────────────────────────────────────── */
+.sticky-footer {
+  flex-shrink: 0;
+  background: var(--white);
+  padding: 16px 24px calc(env(safe-area-inset-bottom, 16px) + 16px);
+  border-top: 1px solid var(--grey-light);
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
+}
+
+/* ─── Error Message ─────────────────────────────────────────────────────── */
+.error-msg {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 15px;
+  color: var(--red);
+  margin-top: 16px;
+  display: none;
+}
+.error-msg.visible { display: block; }
+
+/* ─── HOME SCREEN ───────────────────────────────────────────────────────── */
+.home-hero {
+  background: linear-gradient(145deg, var(--forest) 0%, var(--forest-mid) 100%);
+  border-radius: var(--radius-xl);
+  padding: 28px 24px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.home-hero::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+}
+.home-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -60px;
+  right: 20px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+}
+.hero-greeting { font-size: 15px; color: rgba(255,255,255,0.7); font-weight: 500; margin-bottom: 4px; }
+.hero-title { font-size: 28px; font-weight: 800; color: var(--white); letter-spacing: -0.5px; margin-bottom: 20px; }
+.hero-title span { color: var(--gold-light); }
+.hero-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  height: 64px;
+  background: var(--gold);
+  border-radius: var(--radius-md);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--white);
+  letter-spacing: -0.2px;
+  box-shadow: 0 4px 20px rgba(201,145,43,0.5);
+  transition: transform var(--transition), box-shadow var(--transition);
+  position: relative;
+  z-index: 1;
+}
+.hero-btn:active { transform: scale(0.97); box-shadow: 0 2px 10px rgba(201,145,43,0.4); }
+.hero-btn svg { width: 24px; height: 24px; }
+
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.section-title { font-size: 18px; font-weight: 700; color: var(--charcoal); }
+.section-action { font-size: 15px; color: var(--forest-mid); font-weight: 600; }
+
+.quote-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+  border: 1.5px solid transparent;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  -webkit-user-select: none;
+  user-select: none;
+}
+.quote-card:active { border-color: var(--forest-light); box-shadow: var(--shadow-md); }
+.quote-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--forest-mid), var(--forest-light));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--white);
+}
+.quote-info { flex: 1; min-width: 0; }
+.quote-name { font-size: 17px; font-weight: 700; color: var(--charcoal); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.quote-meta { font-size: 13px; color: var(--grey); margin-top: 2px; }
+.quote-amount { text-align: right; flex-shrink: 0; }
+.quote-total { font-size: 18px; font-weight: 800; color: var(--forest); }
+.quote-date { font-size: 12px; color: var(--grey); margin-top: 2px; }
+.quote-chevron { color: var(--grey-light); margin-left: 4px; }
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+}
+.empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+.empty-title { font-size: 18px; font-weight: 700; color: var(--charcoal); margin-bottom: 6px; }
+.empty-sub { font-size: 15px; color: var(--grey); }
+
+/* ─── CLIENT DETAILS SCREEN ─────────────────────────────────────────────── */
+.client-intro-card {
+  background: linear-gradient(135deg, var(--gold-pale), #FFF9EE);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 24px;
+  border: 1.5px solid rgba(201,145,43,0.2);
+}
+.client-intro-icon {
+  width: 46px;
+  height: 46px;
+  background: var(--gold);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.client-intro-text { flex: 1; }
+.client-intro-title { font-size: 16px; font-weight: 700; color: var(--charcoal); margin-bottom: 4px; }
+.client-intro-sub { font-size: 14px; color: var(--grey-dark); line-height: 1.5; }
+
+/* ─── DECK SKETCH SCREEN ────────────────────────────────────────────────── */
+.canvas-container {
+  flex: 1;
+  position: relative;
+  background: var(--white);
+  overflow: hidden;
+}
+#deckCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+.canvas-hint {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(27,67,50,0.85);
+  color: var(--white);
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  transition: opacity var(--transition);
+}
+.canvas-controls {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.canvas-ctrl-btn {
+  width: 48px;
+  height: 48px;
+  background: var(--white);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--charcoal);
+}
+.canvas-ctrl-btn:active { background: var(--grey-pale); }
+.canvas-info {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: var(--white);
+  border-radius: 12px;
+  padding: 10px 14px;
+  box-shadow: var(--shadow-md);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--charcoal);
+  display: none;
+}
+.canvas-info.visible { display: block; }
+.canvas-info span { color: var(--forest); font-size: 18px; }
+
+/* ─── DIMENSION MODAL ───────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-sheet {
+  background: var(--white);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 8px 24px calc(env(safe-area-inset-bottom, 24px) + 24px);
+  width: 100%;
+  max-width: 600px;
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-handle { width: 40px; height: 4px; background: var(--grey-light); border-radius: 2px; margin: 0 auto 20px; }
+.modal-icon { font-size: 36px; text-align: center; margin-bottom: 8px; }
+.modal-title { font-size: 22px; font-weight: 800; text-align: center; color: var(--charcoal); margin-bottom: 6px; }
+.modal-sub { font-size: 15px; color: var(--grey); text-align: center; margin-bottom: 20px; }
+.modal-input {
+  width: 100%;
+  height: 80px;
+  background: var(--grey-pale);
+  border: 2.5px solid transparent;
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--charcoal);
+  transition: all var(--transition);
+  -webkit-appearance: none;
+  appearance: none;
+  margin-bottom: 16px;
+}
+.modal-input:focus { background: var(--white); border-color: var(--forest-mid); box-shadow: 0 0 0 4px rgba(45,106,79,0.12); }
+.modal-input::placeholder { color: var(--grey-light); font-weight: 400; }
+.modal-unit { font-size: 16px; color: var(--grey); text-align: center; margin-top: -10px; margin-bottom: 20px; font-weight: 600; }
+
+/* ─── HEIGHT SCREEN ─────────────────────────────────────────────────────── */
+.height-visual {
+  background: linear-gradient(180deg, var(--forest) 0%, var(--forest-mid) 100%);
+  border-radius: var(--radius-xl);
+  padding: 32px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  position: relative;
+  overflow: hidden;
+}
+.height-post {
+  width: 24px;
+  background: var(--gold);
+  border-radius: 4px 4px 0 0;
+  margin: 0 20px;
+  transition: height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  min-height: 20px;
+  max-height: 140px;
+}
+.height-deck {
+  position: absolute;
+  top: 32px;
+  left: 24px;
+  right: 24px;
+  height: 16px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 4px;
+}
+.height-ground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: rgba(0,0,0,0.2);
+}
+.height-label {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--gold-light);
+}
+
+/* ─── Segmented Control ─────────────────────────────────────────────────── */
+.segmented {
+  display: flex;
+  background: var(--grey-pale);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+.seg-btn {
+  flex: 1;
+  height: 48px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--grey);
+  transition: all var(--transition);
+}
+.seg-btn.active {
+  background: var(--white);
+  color: var(--charcoal);
+  box-shadow: var(--shadow-sm);
+  font-weight: 700;
+}
+
+/* ─── Material Card ─────────────────────────────────────────────────────── */
+.material-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  border: 2.5px solid var(--grey-light);
+  padding: 18px 20px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all var(--transition);
+}
+.material-card.selected {
+  border-color: var(--forest);
+  background: rgba(27,67,50,0.03);
+  box-shadow: 0 0 0 4px rgba(27,67,50,0.08);
+}
+.material-swatch {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.material-info { flex: 1; }
+.material-name { font-size: 17px; font-weight: 700; color: var(--charcoal); }
+.material-sub { font-size: 13px; color: var(--grey); margin-top: 2px; }
+.material-price { font-size: 16px; font-weight: 700; color: var(--forest); }
+.material-check {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--grey-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+.material-card.selected .material-check {
+  background: var(--forest);
+  border-color: var(--forest);
+}
+
+/* ─── Animations ────────────────────────────────────────────────────────── */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.3s ease both; }
+.fade-in-delay-1 { animation-delay: 0.05s; }
+.fade-in-delay-2 { animation-delay: 0.1s; }
+.fade-in-delay-3 { animation-delay: 0.15s; }
+
+/* ─── Utilities ─────────────────────────────────────────────────────────── */
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-16 { margin-bottom: 16px; }
+.flex-row { display: flex; gap: 12px; }
+.flex-row .btn { flex: 1; }
+.text-center { text-align: center; }
+.text-forest { color: var(--forest); }
+.fw-700 { font-weight: 700; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: HOME                                                            -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="screen-home" class="screen active">
+  <div class="app-header">
+    <div class="header-inner">
+      <div class="header-logo">
+        <svg viewBox="0 0 28 28" fill="none">
+          <rect width="28" height="28" rx="8" fill="rgba(255,255,255,0.15)"/>
+          <path d="M6 18 L14 8 L22 18 Z" fill="none" stroke="#E9B44C" stroke-width="2" stroke-linejoin="round"/>
+          <rect x="10" y="18" width="8" height="4" rx="1" fill="#E9B44C"/>
+          <line x1="6" y1="22" x2="22" y2="22" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+        </svg>
+        <div class="header-brand">Deck<span>Quote</span></div>
+      </div>
+      <button class="header-action" onclick="showSettings()">Settings</button>
+    </div>
+  </div>
+
+  <div class="screen-body">
+    <!-- Hero -->
+    <div class="home-hero fade-in">
+      <div class="hero-greeting">Ready to quote?</div>
+      <div class="hero-title">Build a <span>professional</span><br>deck quote in minutes</div>
+      <button class="hero-btn" onclick="startNewQuote()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="16"/>
+          <line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        New Quote
+      </button>
+    </div>
+
+    <!-- Recent Quotes -->
+    <div class="section-header fade-in fade-in-delay-1">
+      <div class="section-title">Recent Quotes</div>
+      <button class="section-action" onclick="viewAllQuotes()" id="viewAllBtn" style="display:none">See all</button>
+    </div>
+
+    <div id="quotesList" class="fade-in fade-in-delay-2">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: CLIENT DETAILS                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="screen-client" class="screen">
+  <div class="app-header">
+    <div class="header-inner">
+      <button class="back-btn" onclick="goBack()">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="12 4 6 10 12 16"/>
+        </svg>
+        Back
+      </button>
+      <div class="header-title">Client Details</div>
+      <div style="width:60px"></div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-step active">
+        <div class="step-dot">1</div>
+        <div class="step-label">Client</div>
+      </div>
+      <div class="progress-step">
+        <div class="step-dot">2</div>
+        <div class="step-label">Sketch</div>
+      </div>
+      <div class="progress-step">
+        <div class="step-dot">3</div>
+        <div class="step-label">Height</div>
+      </div>
+      <div class="progress-step">
+        <div class="step-dot">4</div>
+        <div class="step-label">Materials</div>
+      </div>
+      <div class="progress-step">
+        <div class="step-dot">5</div>
+        <div class="step-label">Quote</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen-body padded-bottom">
+    <div class="client-intro-card fade-in">
+      <div class="client-intro-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </div>
+      <div class="client-intro-text">
+        <div class="client-intro-title">Hand the iPad to your client</div>
+        <div class="client-intro-sub">Ask them to fill in their details below. All fields except email are required.</div>
+      </div>
+    </div>
+
+    <div class="card fade-in fade-in-delay-1">
+      <div class="flex-row">
+        <div class="form-group" style="flex:1">
+          <label class="field-label" for="clientFirstName">First Name</label>
+          <input class="field-input" type="text" id="clientFirstName" placeholder="Sarah" autocomplete="given-name" autocorrect="off">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label class="field-label" for="clientSurname">Surname</label>
+          <input class="field-input" type="text" id="clientSurname" placeholder="Johnson" autocomplete="family-name" autocorrect="off">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="field-label" for="clientAddress">Address</label>
+        <input class="field-input" type="text" id="clientAddress" placeholder="12 Oak Street, Stirling SA 5152" autocomplete="street-address">
+      </div>
+
+      <div class="form-group">
+        <label class="field-label" for="clientMobile">Mobile Number</label>
+        <input class="field-input" type="tel" id="clientMobile" placeholder="0400 000 000" autocomplete="tel" inputmode="tel">
+      </div>
+
+      <div class="form-group">
+        <label class="field-label" for="clientEmail">
+          Email Address
+          <span style="font-weight:400; color:var(--grey); margin-left:6px;">(optional)</span>
+        </label>
+        <input class="field-input" type="email" id="clientEmail" placeholder="sarah@email.com" autocomplete="email" inputmode="email">
+      </div>
+    </div>
+
+    <div id="clientError" class="error-msg mt-16">
+      Please fill in all required fields.
+    </div>
+  </div>
+
+  <div class="sticky-footer">
+    <button class="btn btn-primary" onclick="submitClientDetails()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+      Continue to Sketch
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: DECK SKETCH                                                     -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="screen-sketch" class="screen">
+  <div class="app-header">
+    <div class="header-inner">
+      <button class="back-btn" onclick="goBack()">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="12 4 6 10 12 16"/>
+        </svg>
+        Back
+      </button>
+      <div class="header-title">Draw Deck Shape</div>
+      <div style="width:60px"></div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-step done">
+        <div class="step-dot">✓</div>
+        <div class="step-label">Client</div>
+      </div>
+      <div class="progress-step active">
+        <div class="step-dot">2</div>
+        <div class="step-label">Sketch</div>
+      </div>
+      <div class="progress-step">
+        <div class="step-dot">3</div>
+        <div class="step-label">Height</div>
+      </div>
+      <div class="progress-step">
+        <div class="step-dot">4</div>
+        <div class="step-label">Materials</div>
+      </div>
+      <div class="progress-step">
+        <div class="step-dot">5</div>
+        <div class="step-label">Quote</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="canvas-container">
+    <canvas id="deckCanvas"></canvas>
+
+    <div class="canvas-info" id="canvasInfo">
+      Area: <span id="areaDisplay">—</span> m²
+    </div>
+
+    <div class="canvas-controls">
+      <button class="canvas-ctrl-btn" onclick="undoLastPoint()" title="Undo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 14 4 9 9 4"/>
+          <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+        </svg>
+      </button>
+      <button class="canvas-ctrl-btn" onclick="clearSketch()" title="Clear all">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14H6L5 6"/>
+          <path d="M10 11v6M14 11v6"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="canvas-hint" id="canvasHint">Tap to place the first corner</div>
+  </div>
+
+  <div class="sticky-footer" id="sketchFooter">
+    <div class="flex-row">
+      <button class="btn btn-ghost" id="closeShapeBtn" onclick="closeShape()" style="display:none">
+        Close Shape
+      </button>
+      <button class="btn btn-primary" id="sketchNextBtn" onclick="goToHeight()" style="display:none">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+        Continue
+      </button>
+    </div>
+    <div class="caption text-center mt-8" id="sketchCaption">Tap corners of the deck in order. Enter each side length when prompted.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: HEIGHT                                                           -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="screen-height" class="screen">
+  <div class="app-header">
+    <div class="header-inner">
+      <button class="back-btn" onclick="goBack()">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="12 4 6 10 12 16"/>
+        </svg>
+        Back
+      </button>
+      <div class="header-title">Deck Height</div>
+      <div style="width:60px"></div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-step done"><div class="step-dot">✓</div><div class="step-label">Client</div></div>
+      <div class="progress-step done"><div class="step-dot">✓</div><div class="step-label">Sketch</div></div>
+      <div class="progress-step active"><div class="step-dot">3</div><div class="step-label">Height</div></div>
+      <div class="progress-step"><div class="step-dot">4</div><div class="step-label">Materials</div></div>
+      <div class="progress-step"><div class="step-dot">5</div><div class="step-label">Quote</div></div>
+    </div>
+  </div>
+
+  <div class="screen-body padded-bottom">
+    <div class="height-visual fade-in">
+      <div class="height-deck"></div>
+      <div class="height-post" id="heightPostLeft" style="height:60px; margin-top:48px;"></div>
+      <div class="height-post" id="heightPostRight" style="height:60px; margin-top:48px;"></div>
+      <div class="height-label" id="heightLabel">1.0m</div>
+      <div class="height-ground"></div>
+    </div>
+
+    <div class="card fade-in fade-in-delay-1">
+      <div class="label">Height above ground</div>
+      <div class="flex-row" style="align-items:center; gap:16px;">
+        <input class="field-input" type="number" id="deckHeight" placeholder="1.2"
+          step="0.1" min="0.1" max="5" inputmode="decimal"
+          oninput="updateHeightVisual(this.value)" style="font-size:28px; font-weight:800; text-align:center;">
+        <div style="font-size:22px; font-weight:700; color:var(--grey); flex-shrink:0;">metres</div>
+      </div>
+      <div class="caption mt-8">Measure from finished deck surface to ground level</div>
+    </div>
+
+    <div class="card mt-12 fade-in fade-in-delay-2">
+      <div class="label">Quick Select</div>
+      <div class="flex-row" style="flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" style="flex:none;width:auto;padding:0 20px;" onclick="setHeight(0.3)">Low (0.3m)</button>
+        <button class="btn btn-ghost btn-sm" style="flex:none;width:auto;padding:0 20px;" onclick="setHeight(0.6)">0.6m</button>
+        <button class="btn btn-ghost btn-sm" style="flex:none;width:auto;padding:0 20px;" onclick="setHeight(1.0)">1.0m</button>
+        <button class="btn btn-ghost btn-sm" style="flex:none;width:auto;padding:0 20px;" onclick="setHeight(1.8)">1.8m</button>
+        <button class="btn btn-ghost btn-sm" style="flex:none;width:auto;padding:0 20px;" onclick="setHeight(2.4)">2.4m</button>
+        <button class="btn btn-ghost btn-sm" style="flex:none;width:auto;padding:0 20px;" onclick="setHeight(4.0)">High (4.0m)</button>
+      </div>
+    </div>
+
+    <div id="heightInfo" class="card mt-12 fade-in fade-in-delay-3" style="background:rgba(27,67,50,0.04); border:1.5px solid rgba(27,67,50,0.12);">
+      <div class="label">Subframe spec</div>
+      <div id="heightInfoText" class="fw-700" style="font-size:17px; color:var(--forest);">—</div>
+      <div class="caption mt-8" id="heightInfoSub">Enter height above to see recommended post size</div>
+    </div>
+  </div>
+
+  <div class="sticky-footer">
+    <button class="btn btn-primary" onclick="submitHeight()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+      Continue to Materials
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- SCREEN: MATERIALS                                                        -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="screen-materials" class="screen">
+  <div class="app-header">
+    <div class="header-inner">
+      <button class="back-btn" onclick="goBack()">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="12 4 6 10 12 16"/>
+        </svg>
+        Back
+      </button>
+      <div class="header-title">Decking Material</div>
+      <div style="width:60px"></div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-step done"><div class="step-dot">✓</div><div class="step-label">Client</div></div>
+      <div class="progress-step done"><div class="step-dot">✓</div><div class="step-label">Sketch</div></div>
+      <div class="progress-step done"><div class="step-dot">✓</div><div class="step-label">Height</div></div>
+      <div class="progress-step active"><div class="step-dot">4</div><div class="step-label">Materials</div></div>
+      <div class="progress-step"><div class="step-dot">5</div><div class="step-label">Quote</div></div>
+    </div>
+  </div>
+
+  <div class="screen-body padded-bottom">
+    <div class="segmented fade-in">
+      <button class="seg-btn active" id="segComposite" onclick="switchMaterialType('composite')">Composite</button>
+      <button class="seg-btn" id="segHardwood" onclick="switchMaterialType('hardwood')">Hardwood</button>
+    </div>
+
+    <!-- Composite options -->
+    <div id="compositeOptions" class="fade-in fade-in-delay-1">
+      <div class="label mb-8">Ekodeck range</div>
+
+      <div class="material-card selected" id="mat-ekodeck-classic" onclick="selectMaterial('ekodeck-classic', this)">
+        <div class="material-swatch" style="background:linear-gradient(135deg,#6B5344,#8B6B5A);"></div>
+        <div class="material-info">
+          <div class="material-name">Ekodeck Classic</div>
+          <div class="material-sub">136mm × 23mm · Various colours</div>
+          <div class="material-price" id="price-ekodeck-classic">$— /lm</div>
+        </div>
+        <div class="material-check">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+
+      <div class="material-card" id="mat-ekodeck-plus" onclick="selectMaterial('ekodeck-plus', this)">
+        <div class="material-swatch" style="background:linear-gradient(135deg,#4A5D4E,#607968);"></div>
+        <div class="material-info">
+          <div class="material-name">Ekodeck Plus</div>
+          <div class="material-sub">136mm × 32mm · Premium range</div>
+          <div class="material-price" id="price-ekodeck-plus">$— /lm</div>
+        </div>
+        <div class="material-check">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hardwood options -->
+    <div id="hardwoodOptions" style="display:none" class="fade-in fade-in-delay-1">
+      <div class="label mb-8">Hardwood species</div>
+
+      <div class="material-card" id="mat-merbau" onclick="selectMaterial('merbau', this)">
+        <div class="material-swatch" style="background:linear-gradient(135deg,#7B3F1A,#A0522D);"></div>
+        <div class="material-info">
+          <div class="material-name">Merbau</div>
+          <div class="material-sub">90mm × 19mm · Rich reddish-brown</div>
+          <div class="material-price" id="price-merbau">$— /lm</div>
+        </div>
+        <div class="material-check">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+
+      <div class="material-card" id="mat-spotted-gum" onclick="selectMaterial('spotted-gum', this)">
+        <div class="material-swatch" style="background:linear-gradient(135deg,#8B7355,#B8966E);"></div>
+        <div class="material-info">
+          <div class="material-name">Spotted Gum</div>
+          <div class="material-sub">86mm × 19mm · Natural Australian hardwood</div>
+          <div class="material-price" id="price-spotted-gum">$— /lm</div>
+        </div>
+        <div class="material-check">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+
+      <div class="material-card" id="mat-blackbutt" onclick="selectMaterial('blackbutt', this)">
+        <div class="material-swatch" style="background:linear-gradient(135deg,#C8A882,#D4B896);"></div>
+        <div class="material-info">
+          <div class="material-name">Blackbutt</div>
+          <div class="material-sub">86mm × 19mm · Pale honey tones</div>
+          <div class="material-price" id="price-blackbutt">$— /lm</div>
+        </div>
+        <div class="material-check">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Joist spacing note for composite -->
+    <div id="compositeSpacingNote" class="card mt-16 fade-in fade-in-delay-2" style="background:rgba(27,67,50,0.04); border:1.5px solid rgba(27,67,50,0.12);">
+      <div class="label">Ekodeck joist spacing</div>
+      <div class="fw-700" style="font-size:16px; color:var(--forest);">300mm centres (standard Ekodeck spec)</div>
+      <div class="caption mt-8">Subframe will be calculated at 300mm joist centres as required by Ekodeck installation guidelines.</div>
+    </div>
+
+    <div id="materialsError" class="error-msg mt-16">Please select a material to continue.</div>
+  </div>
+
+  <div class="sticky-footer">
+    <button class="btn btn-primary" onclick="submitMaterials()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+      Calculate Quote
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- DIMENSION INPUT MODAL                                                   -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="dimensionModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-icon">📐</div>
+    <div class="modal-title" id="modalTitle">How long is this side?</div>
+    <div class="modal-sub" id="modalSub">Side 1 of your deck</div>
+    <input class="modal-input" type="number" id="dimensionInput"
+      placeholder="4.2" step="0.1" min="0.1" max="50" inputmode="decimal">
+    <div class="modal-unit">metres</div>
+    <button class="btn btn-primary" onclick="confirmDimension()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      Confirm
+    </button>
+    <button class="btn btn-ghost mt-12" onclick="cancelDimension()">Cancel last point</button>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════════
+const APP = {
+  currentScreen: 'home',
+  screenHistory: [],
+  currentQuote: null,
+  quotes: [],
+
+  // Price list (per lineal metre, editable in settings)
+  prices: {
+    'ekodeck-classic': 18.50,
+    'ekodeck-plus':    24.90,
+    'merbau':          12.80,
+    'spotted-gum':     14.50,
+    'blackbutt':       13.20,
+    // Subframe materials (per piece at Bunnings)
+    'timber-90x45':    8.40,   // per lm
+    'timber-140x45':  12.20,   // per lm
+    'timber-190x45':  16.80,   // per lm
+    'post-90x90':     11.50,   // per lm
+    'post-140x140':   22.00,   // per lm
+    'joist-hanger':    2.80,   // each
+    'post-base':      14.50,   // each
+    'screws-box':     18.00,   // per box (covers ~20lm decking)
+  },
+
+  // Markup
+  markup: 0.30, // 30% default
+
+  // Drawing state
+  sketch: {
+    points: [],         // [{x, y}] canvas coords
+    segments: [],       // [{length: metres}]
+    closed: false,
+    area: 0,
+    perimeter: 0,
+    scale: null,        // pixels per metre (set after first dimension)
+    originX: 0,
+    originY: 0,
+    pendingPoint: null, // point tapped but awaiting dimension
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + id);
+  if (el) el.classList.add('active');
+  APP.currentScreen = id;
+}
+
+function goBack() {
+  if (APP.screenHistory.length > 0) {
+    const prev = APP.screenHistory.pop();
+    showScreen(prev);
+  } else {
+    showScreen('home');
+  }
+}
+
+function navigateTo(id) {
+  APP.screenHistory.push(APP.currentScreen);
+  showScreen(id);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HOME SCREEN
+// ═══════════════════════════════════════════════════════════════════════════
+function loadQuotes() {
+  try {
+    APP.quotes = JSON.parse(localStorage.getItem('dq_quotes') || '[]');
+  } catch(e) { APP.quotes = []; }
+  renderQuotesList();
+}
+
+function saveQuotes() {
+  localStorage.setItem('dq_quotes', JSON.stringify(APP.quotes));
+}
+
+function renderQuotesList() {
+  const el = document.getElementById('quotesList');
+  if (!APP.quotes.length) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🏗️</div>
+        <div class="empty-title">No quotes yet</div>
+        <div class="empty-sub">Tap New Quote above to get started</div>
+      </div>`;
+    return;
+  }
+
+  const recent = APP.quotes.slice().reverse().slice(0, 10);
+  el.innerHTML = recent.map(q => {
+    const initials = ((q.client.firstName||'?')[0] + (q.client.surname||'?')[0]).toUpperCase();
+    const name = `${q.client.firstName} ${q.client.surname}`.trim() || 'Unknown Client';
+    const total = q.total ? `$${q.total.toLocaleString('en-AU', {minimumFractionDigits:0, maximumFractionDigits:0})}` : 'In progress';
+    const date = q.updatedAt ? new Date(q.updatedAt).toLocaleDateString('en-AU', {day:'numeric',month:'short'}) : '';
+    const mat = q.material ? materialLabel(q.material) : 'Draft';
+    return `
+      <div class="quote-card" onclick="openQuote('${q.id}')">
+        <div class="quote-avatar">${initials}</div>
+        <div class="quote-info">
+          <div class="quote-name">${name}</div>
+          <div class="quote-meta">${mat}${q.deck?.area ? ' · ' + q.deck.area.toFixed(1) + ' m²' : ''}</div>
+        </div>
+        <div class="quote-amount">
+          <div class="quote-total">${total}</div>
+          <div class="quote-date">${date}</div>
+        </div>
+        <svg class="quote-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </div>`;
+  }).join('');
+
+  document.getElementById('viewAllBtn').style.display = APP.quotes.length > 10 ? '' : 'none';
+}
+
+function materialLabel(key) {
+  const map = {
+    'ekodeck-classic': 'Ekodeck Classic',
+    'ekodeck-plus':    'Ekodeck Plus',
+    'merbau':          'Merbau',
+    'spotted-gum':     'Spotted Gum',
+    'blackbutt':       'Blackbutt',
+  };
+  return map[key] || key;
+}
+
+function startNewQuote() {
+  APP.currentQuote = {
+    id: 'q_' + Date.now(),
+    client: {},
+    deck: null,
+    height: null,
+    material: null,
+    subframe: null,
+    pricing: null,
+    total: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  resetSketch();
+  clearClientForm();
+  navigateTo('client');
+}
+
+function openQuote(id) {
+  const q = APP.quotes.find(x => x.id === id);
+  if (!q) return;
+  APP.currentQuote = JSON.parse(JSON.stringify(q));
+  // TODO: navigate to appropriate screen based on completion
+  navigateTo('client');
+  populateClientForm(q.client);
+}
+
+function viewAllQuotes() { /* TODO */ }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CLIENT DETAILS
+// ═══════════════════════════════════════════════════════════════════════════
+function clearClientForm() {
+  ['clientFirstName','clientSurname','clientAddress','clientMobile','clientEmail'].forEach(id => {
+    document.getElementById(id).value = '';
+    document.getElementById(id).classList.remove('error');
+  });
+  document.getElementById('clientError').classList.remove('visible');
+}
+
+function populateClientForm(client) {
+  if (!client) return;
+  document.getElementById('clientFirstName').value = client.firstName || '';
+  document.getElementById('clientSurname').value   = client.surname   || '';
+  document.getElementById('clientAddress').value   = client.address   || '';
+  document.getElementById('clientMobile').value    = client.mobile    || '';
+  document.getElementById('clientEmail').value     = client.email     || '';
+}
+
+function submitClientDetails() {
+  const firstName = document.getElementById('clientFirstName').value.trim();
+  const surname   = document.getElementById('clientSurname').value.trim();
+  const address   = document.getElementById('clientAddress').value.trim();
+  const mobile    = document.getElementById('clientMobile').value.trim();
+  const email     = document.getElementById('clientEmail').value.trim();
+
+  let valid = true;
+  [
+    ['clientFirstName', firstName],
+    ['clientSurname',   surname],
+    ['clientAddress',   address],
+    ['clientMobile',    mobile],
+  ].forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (!val) { el.classList.add('error'); valid = false; }
+    else el.classList.remove('error');
+  });
+
+  if (!valid) {
+    document.getElementById('clientError').classList.add('visible');
+    return;
+  }
+  document.getElementById('clientError').classList.remove('visible');
+
+  APP.currentQuote.client = { firstName, surname, address, mobile, email };
+  saveCurrentQuote();
+  navigateTo('sketch');
+  initCanvas();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DECK SKETCH — CANVAS DRAWING
+// ═══════════════════════════════════════════════════════════════════════════
+let canvas, ctx;
+const SNAP_RADIUS = 28;
+const POINT_RADIUS = 8;
+const POINT_RADIUS_FIRST = 14;
+
+function initCanvas() {
+  canvas = document.getElementById('deckCanvas');
+  ctx = canvas.getContext('2d');
+  resizeCanvas();
+  redrawCanvas();
+  canvas.addEventListener('touchstart', onCanvasTap, { passive: false });
+  canvas.addEventListener('click', onCanvasClick);
+}
+
+function resizeCanvas() {
+  if (!canvas) return;
+  const container = canvas.parentElement;
+  canvas.width  = container.clientWidth  * window.devicePixelRatio;
+  canvas.height = container.clientHeight * window.devicePixelRatio;
+  canvas.style.width  = container.clientWidth  + 'px';
+  canvas.style.height = container.clientHeight + 'px';
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  redrawCanvas();
+}
+
+window.addEventListener('resize', resizeCanvas);
+
+function resetSketch() {
+  APP.sketch = {
+    points: [], segments: [], closed: false,
+    area: 0, perimeter: 0, scale: null,
+    originX: 0, originY: 0, pendingPoint: null,
+  };
+}
+
+function onCanvasTap(e) {
+  e.preventDefault();
+  const touch = e.changedTouches[0];
+  const rect  = canvas.getBoundingClientRect();
+  handleCanvasInput(touch.clientX - rect.left, touch.clientY - rect.top);
+}
+
+function onCanvasClick(e) {
+  const rect = canvas.getBoundingClientRect();
+  handleCanvasInput(e.clientX - rect.left, e.clientY - rect.top);
+}
+
+function handleCanvasInput(x, y) {
+  const sk = APP.sketch;
+  if (sk.closed) return;
+  if (document.getElementById('dimensionModal').classList.contains('open')) return;
+
+  // Check if near first point (close shape)
+  if (sk.points.length >= 3) {
+    const fp = sk.points[0];
+    const dist = Math.hypot(x - fp.x, y - fp.y);
+    if (dist < SNAP_RADIUS * 2) {
+      // Snap to first point, close shape
+      sk.pendingPoint = { x: fp.x, y: fp.y };
+      openDimensionModal(sk.segments.length + 1, true);
+      return;
+    }
+  }
+
+  sk.pendingPoint = { x, y };
+  if (sk.points.length === 0) {
+    // First point — no dimension needed yet
+    sk.points.push({ x, y });
+    sk.originX = x; sk.originY = y;
+    updateHint();
+    redrawCanvas();
+  } else {
+    // Subsequent point — ask for dimension
+    openDimensionModal(sk.segments.length + 1, false);
+  }
+}
+
+function openDimensionModal(sideNum, isClosing) {
+  const modal = document.getElementById('dimensionModal');
+  const input = document.getElementById('dimensionInput');
+  document.getElementById('modalTitle').textContent = isClosing ? 'How long is the last side?' : 'How long is this side?';
+  document.getElementById('modalSub').textContent = isClosing ? 'This will close the shape' : `Side ${sideNum} of your deck`;
+  input.value = '';
+  modal.classList.add('open');
+  setTimeout(() => input.focus(), 350);
+  modal._closing = isClosing;
+}
+
+function confirmDimension() {
+  const input = document.getElementById('dimensionInput');
+  const val = parseFloat(input.value);
+  if (!val || val <= 0 || val > 100) {
+    input.style.borderColor = 'var(--red)';
+    setTimeout(() => input.style.borderColor = '', 600);
+    return;
+  }
+
+  const modal = document.getElementById('dimensionModal');
+  modal.classList.remove('open');
+
+  const sk = APP.sketch;
+  const lastPt = sk.points[sk.points.length - 1];
+  const newPt  = sk.pendingPoint;
+
+  // Compute direction angle from last to new point
+  const angle = Math.atan2(newPt.y - lastPt.y, newPt.x - lastPt.x);
+
+  // Set scale on first segment, or use existing scale
+  if (!sk.scale) {
+    // Use canvas width as reference: max 80% of width for first segment
+    const maxPx = Math.min(canvas.clientWidth, canvas.clientHeight) * 0.5;
+    sk.scale = maxPx / val;
+  }
+
+  // Compute actual endpoint using scale + direction
+  const pxLen = val * sk.scale;
+  const endX = lastPt.x + Math.cos(angle) * pxLen;
+  const endY = lastPt.y + Math.sin(angle) * pxLen;
+
+  if (modal._closing) {
+    // Close back to origin
+    sk.segments.push({ length: val });
+    sk.closed = true;
+    sk.pendingPoint = null;
+    sk.perimeter = sk.segments.reduce((s, seg) => s + seg.length, 0);
+    sk.area = computeArea();
+    document.getElementById('canvasInfo').classList.add('visible');
+    document.getElementById('areaDisplay').textContent = sk.area.toFixed(1);
+    document.getElementById('closeShapeBtn').style.display = 'none';
+    document.getElementById('sketchNextBtn').style.display = '';
+    document.getElementById('sketchCaption').textContent = `Area: ${sk.area.toFixed(1)} m² · Perimeter: ${sk.perimeter.toFixed(1)} m`;
+  } else {
+    sk.points.push({ x: endX, y: endY });
+    sk.segments.push({ length: val });
+    sk.pendingPoint = null;
+
+    if (sk.points.length >= 3) {
+      document.getElementById('closeShapeBtn').style.display = '';
+    }
+  }
+
+  updateHint();
+  redrawCanvas();
+}
+
+function cancelDimension() {
+  document.getElementById('dimensionModal').classList.remove('open');
+  APP.sketch.pendingPoint = null;
+}
+
+function closeShape() {
+  const sk = APP.sketch;
+  if (sk.points.length < 3) return;
+  // Ask for the final side dimension
+  sk.pendingPoint = { x: sk.points[0].x, y: sk.points[0].y };
+  openDimensionModal(sk.segments.length + 1, true);
+}
+
+function computeArea() {
+  // Shoelace formula using entered segment lengths
+  const sk = APP.sketch;
+  const pts = sk.points;
+  if (pts.length < 3) return 0;
+  let area = 0;
+  const n = pts.length;
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    area += pts[i].x * pts[j].y;
+    area -= pts[j].x * pts[i].y;
+  }
+  // Convert from pixel² to m² using scale
+  const pixelArea = Math.abs(area) / 2;
+  const scale = sk.scale || 1;
+  return pixelArea / (scale * scale);
+}
+
+function redrawCanvas() {
+  if (!canvas || !ctx) return;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  ctx.clearRect(0, 0, w, h);
+
+  const sk = APP.sketch;
+  if (!sk.points.length) return;
+
+  // Draw grid (subtle)
+  ctx.strokeStyle = 'rgba(0,0,0,0.04)';
+  ctx.lineWidth = 1;
+  const gridSize = 40;
+  for (let x = 0; x < w; x += gridSize) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+  for (let y = 0; y < h; y += gridSize) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+
+  // Fill closed shape
+  if (sk.closed && sk.points.length >= 3) {
+    ctx.beginPath();
+    ctx.moveTo(sk.points[0].x, sk.points[0].y);
+    sk.points.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(27,67,50,0.08)';
+    ctx.fill();
+  }
+
+  // Draw lines
+  ctx.strokeStyle = '#1B4332';
+  ctx.lineWidth   = 3;
+  ctx.lineJoin    = 'round';
+  ctx.lineCap     = 'round';
+  if (sk.points.length >= 2) {
+    ctx.beginPath();
+    ctx.moveTo(sk.points[0].x, sk.points[0].y);
+    sk.points.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+    if (sk.closed) ctx.closePath();
+    ctx.stroke();
+  }
+
+  // Draw dimension labels on each segment
+  sk.segments.forEach((seg, i) => {
+    const a = sk.points[i];
+    const b = sk.closed && i === sk.segments.length - 1 ? sk.points[0] : sk.points[i + 1];
+    if (!a || !b) return;
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2;
+    const angle = Math.atan2(b.y - a.y, b.x - a.x);
+    const offset = 22;
+    const lx = mx - Math.sin(angle) * offset;
+    const ly = my + Math.cos(angle) * offset;
+    ctx.save();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.roundRect(lx - 26, ly - 12, 52, 24, 6);
+    ctx.fill();
+    ctx.strokeStyle = '#1B4332';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#1B4332';
+    ctx.font = 'bold 13px -apple-system, system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(seg.length.toFixed(1) + 'm', lx, ly);
+    ctx.restore();
+  });
+
+  // Draw points
+  sk.points.forEach((p, i) => {
+    const isFirst = i === 0;
+    const radius  = isFirst ? POINT_RADIUS_FIRST : POINT_RADIUS;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+    ctx.fillStyle   = isFirst ? '#C9912B' : '#1B4332';
+    ctx.fill();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth   = 2.5;
+    ctx.stroke();
+  });
+
+  // Snap ring on first point if enough points to close
+  if (sk.points.length >= 3 && !sk.closed) {
+    const fp = sk.points[0];
+    ctx.beginPath();
+    ctx.arc(fp.x, fp.y, POINT_RADIUS_FIRST + 8, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(201,145,43,0.4)';
+    ctx.lineWidth   = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Pending point ghost
+  if (sk.pendingPoint) {
+    ctx.beginPath();
+    ctx.arc(sk.pendingPoint.x, sk.pendingPoint.y, POINT_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(27,67,50,0.3)';
+    ctx.fill();
+  }
+}
+
+function updateHint() {
+  const sk  = APP.sketch;
+  const el  = document.getElementById('canvasHint');
+  if (sk.closed) { el.style.opacity = '0'; return; }
+  if (!sk.points.length) { el.textContent = 'Tap to place the first corner'; el.style.opacity = '1'; return; }
+  if (sk.points.length === 1) { el.textContent = 'Tap to place the next corner'; el.style.opacity = '1'; return; }
+  if (sk.points.length >= 3) { el.textContent = 'Tap the gold dot to close the shape, or add more corners'; el.style.opacity = '1'; return; }
+  el.textContent = 'Keep tapping corners'; el.style.opacity = '1';
+}
+
+function undoLastPoint() {
+  const sk = APP.sketch;
+  if (sk.closed) { sk.closed = false; document.getElementById('sketchNextBtn').style.display = 'none'; }
+  if (sk.points.length > 1) {
+    sk.points.pop();
+    sk.segments.pop();
+  } else if (sk.points.length === 1) {
+    sk.points = [];
+  }
+  if (sk.points.length < 3) { document.getElementById('closeShapeBtn').style.display = 'none'; }
+  sk.area = 0;
+  document.getElementById('canvasInfo').classList.remove('visible');
+  updateHint();
+  redrawCanvas();
+}
+
+function clearSketch() {
+  resetSketch();
+  document.getElementById('closeShapeBtn').style.display  = 'none';
+  document.getElementById('sketchNextBtn').style.display  = 'none';
+  document.getElementById('canvasInfo').classList.remove('visible');
+  document.getElementById('sketchCaption').textContent    = 'Tap corners of the deck in order. Enter each side length when prompted.';
+  updateHint();
+  redrawCanvas();
+}
+
+function goToHeight() {
+  const sk = APP.sketch;
+  if (!sk.closed || sk.area <= 0) return;
+  APP.currentQuote.deck = {
+    points:    sk.points,
+    segments:  sk.segments,
+    area:      sk.area,
+    perimeter: sk.perimeter,
+  };
+  saveCurrentQuote();
+  navigateTo('height');
+  document.getElementById('deckHeight').value = '';
+  updateHeightInfo(null);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HEIGHT SCREEN
+// ═══════════════════════════════════════════════════════════════════════════
+function setHeight(h) {
+  document.getElementById('deckHeight').value = h;
+  updateHeightVisual(h);
+}
+
+function updateHeightVisual(h) {
+  const val = parseFloat(h) || 0;
+  const maxH = 140, minH = 16;
+  const pxH = Math.min(maxH, Math.max(minH, val * 30));
+  const topMargin = 48 + (140 - pxH); // keeps tops aligned
+  document.getElementById('heightPostLeft').style.height  = pxH + 'px';
+  document.getElementById('heightPostRight').style.height = pxH + 'px';
+  document.getElementById('heightPostLeft').style.marginTop  = topMargin + 'px';
+  document.getElementById('heightPostRight').style.marginTop = topMargin + 'px';
+  document.getElementById('heightLabel').textContent = val.toFixed(1) + 'm';
+  updateHeightInfo(val);
+}
+
+function updateHeightInfo(h) {
+  const el    = document.getElementById('heightInfoText');
+  const sub   = document.getElementById('heightInfoSub');
+  if (!h || h <= 0) {
+    el.textContent  = '—';
+    sub.textContent = 'Enter height above to see recommended post size';
+    return;
+  }
+  let postSize, note;
+  if (h <= 1.0) {
+    postSize = '90 × 90mm H4 posts';
+    note = 'Suitable for low-level decks. No bracing required.';
+  } else if (h <= 2.0) {
+    postSize = '140 × 140mm H4 posts';
+    note = 'Mid-height deck. Diagonal bracing may be required per council.';
+  } else if (h <= 3.0) {
+    postSize = '140 × 140mm H4 posts + bracing';
+    note = 'Engineer certification recommended above 2.5m in SA.';
+  } else {
+    postSize = '140 × 140mm H4 posts + engineer';
+    note = 'Above 3m: engineer certification required in SA. Note in quote.';
+  }
+  el.textContent  = postSize;
+  sub.textContent = note;
+}
+
+function submitHeight() {
+  const val = parseFloat(document.getElementById('deckHeight').value);
+  if (!val || val <= 0) {
+    document.getElementById('deckHeight').classList.add('error');
+    setTimeout(() => document.getElementById('deckHeight').classList.remove('error'), 800);
+    return;
+  }
+  APP.currentQuote.height = val;
+  saveCurrentQuote();
+  navigateTo('materials');
+  updateMaterialPrices();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MATERIALS SCREEN
+// ═══════════════════════════════════════════════════════════════════════════
+let selectedMaterialType = 'composite';
+let selectedMaterial = 'ekodeck-classic';
+
+function switchMaterialType(type) {
+  selectedMaterialType = type;
+  document.getElementById('segComposite').classList.toggle('active', type === 'composite');
+  document.getElementById('segHardwood').classList.toggle('active',  type === 'hardwood');
+  document.getElementById('compositeOptions').style.display = type === 'composite' ? '' : 'none';
+  document.getElementById('hardwoodOptions').style.display  = type === 'hardwood'  ? '' : 'none';
+  document.getElementById('compositeSpacingNote').style.display = type === 'composite' ? '' : 'none';
+
+  // Select first option of new type
+  if (type === 'composite') selectMaterial('ekodeck-classic', document.getElementById('mat-ekodeck-classic'));
+  else selectMaterial('merbau', document.getElementById('mat-merbau'));
+}
+
+function selectMaterial(key, el) {
+  selectedMaterial = key;
+  document.querySelectorAll('.material-card').forEach(c => c.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+}
+
+function updateMaterialPrices() {
+  Object.keys(APP.prices).forEach(key => {
+    const el = document.getElementById('price-' + key);
+    if (el) el.textContent = `$${APP.prices[key].toFixed(2)} /lm`;
+  });
+}
+
+function submitMaterials() {
+  if (!selectedMaterial) {
+    document.getElementById('materialsError').classList.add('visible');
+    return;
+  }
+  document.getElementById('materialsError').classList.remove('visible');
+  APP.currentQuote.material = selectedMaterial;
+  saveCurrentQuote();
+  // TODO: navigate to quote preview (Phase 2)
+  alert('Materials saved! Quote calculation coming in the next update.');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PERSISTENCE
+// ═══════════════════════════════════════════════════════════════════════════
+function saveCurrentQuote() {
+  if (!APP.currentQuote) return;
+  APP.currentQuote.updatedAt = new Date().toISOString();
+  const idx = APP.quotes.findIndex(q => q.id === APP.currentQuote.id);
+  if (idx >= 0) APP.quotes[idx] = APP.currentQuote;
+  else APP.quotes.push(APP.currentQuote);
+  saveQuotes();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SETTINGS (placeholder)
+// ═══════════════════════════════════════════════════════════════════════════
+function showSettings() {
+  alert('Settings (price list editor) coming soon.');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  loadQuotes();
+  loadPrices();
+  updateMaterialPrices();
+});
+
+function loadPrices() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('dq_prices'));
+    if (saved) Object.assign(APP.prices, saved);
+  } catch(e) {}
+}
+</script>
+</body>
+</html>
