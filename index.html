@@ -533,7 +533,7 @@ function handleCanvasInput(x,y) {
   if (sk.closed||document.getElementById('dimensionModal').classList.contains('open')) return;
   if (sk.points.length>=3) {
     const fp=sk.points[0];
-    if (Math.hypot(x-fp.x,y-fp.y)<SNAP_R*2){sk.pendingPoint={x:fp.x,y:fp.y};openDimModal(sk.segments.length+1,true);return;}
+    if (Math.hypot(x-fp.x,y-fp.y)<SNAP_R*2){doCloseShape();return;}
   }
   sk.pendingPoint={x,y};
   if (!sk.points.length){sk.points.push({x,y});updateHint();redrawCanvas();}
@@ -560,17 +560,31 @@ function confirmDimension() {
     sk.perimeter=sk.segments.reduce((s,seg)=>s+seg.length,0); sk.area=computeArea();
     document.getElementById('canvasInfo').classList.add('visible');
     document.getElementById('areaDisplay').textContent=sk.area.toFixed(1);
-    document.getElementById('closeShapeBtn').style.display='none';
-    document.getElementById('sketchNextBtn').style.display='';
+    document.getElementById('closeShapeBtn').classList.add('hidden');document.getElementById('closeShapeBtn').style.display='none';
+    document.getElementById('sketchNextBtn').classList.remove('hidden');document.getElementById('sketchNextBtn').style.display='';
     document.getElementById('sketchCaption').textContent='Area: '+sk.area.toFixed(1)+' m² · Perimeter: '+sk.perimeter.toFixed(1)+' m';
   } else {
     sk.points.push({x:ex,y:ey}); sk.segments.push({length:val}); sk.pendingPoint=null;
-    if (sk.points.length>=3) document.getElementById('closeShapeBtn').style.display='';
+    if (sk.points.length>=3){document.getElementById('closeShapeBtn').classList.remove('hidden');document.getElementById('closeShapeBtn').style.display='';}
   }
   updateHint(); redrawCanvas();
 }
 function cancelDimension(){document.getElementById('dimensionModal').classList.remove('open');APP.sketch.pendingPoint=null;}
-function closeShape(){const sk=APP.sketch;if(sk.points.length<3)return;sk.pendingPoint={x:sk.points[0].x,y:sk.points[0].y};openDimModal(sk.segments.length+1,true);}
+function doCloseShape(){
+  const sk=APP.sketch;if(sk.points.length<3||!sk.scale)return;
+  const last=sk.points[sk.points.length-1],fp=sk.points[0];
+  const metres=Math.round(Math.hypot(fp.x-last.x,fp.y-last.y)/sk.scale*10)/10;
+  sk.segments.push({length:Math.max(metres,0.1)});sk.closed=true;sk.pendingPoint=null;
+  sk.perimeter=sk.segments.reduce((s,seg)=>s+seg.length,0);sk.area=computeArea();
+  document.getElementById('canvasInfo').classList.remove('hidden');document.getElementById('canvasInfo').classList.add('visible');
+  document.getElementById('areaDisplay').textContent=sk.area.toFixed(1);
+  const csb=document.getElementById('closeShapeBtn'),snb=document.getElementById('sketchNextBtn');
+  csb.classList.add('hidden');csb.style.display='none';
+  snb.classList.remove('hidden');snb.style.display='';
+  document.getElementById('sketchCaption').textContent='Area: '+sk.area.toFixed(1)+' m² · Perimeter: '+sk.perimeter.toFixed(1)+' m';
+  updateHint();redrawCanvas();
+}
+function closeShape(){doCloseShape();}
 function computeArea(){
   const sk=APP.sketch,pts=sk.points;if(pts.length<3)return 0;
   let a=0;const n=pts.length;
@@ -637,17 +651,20 @@ function updateHint(){
 }
 function undoLastPoint(){
   const sk=APP.sketch;
-  if(sk.closed){sk.closed=false;document.getElementById('sketchNextBtn').style.display='none';}
+  const csb=document.getElementById('closeShapeBtn'),snb=document.getElementById('sketchNextBtn');
+  if(sk.closed){sk.closed=false;snb.classList.add('hidden');snb.style.display='none';}
   if(sk.points.length>1){sk.points.pop();sk.segments.pop();}
   else if(sk.points.length===1)sk.points=[];
-  if(sk.points.length<3)document.getElementById('closeShapeBtn').style.display='none';
+  if(sk.points.length>=3){csb.classList.remove('hidden');csb.style.display='';}
+  else{csb.classList.add('hidden');csb.style.display='none';}
   sk.area=0;document.getElementById('canvasInfo').classList.remove('visible');
   updateHint();redrawCanvas();
 }
 function clearSketch(){
   resetSketch();
-  document.getElementById('closeShapeBtn').style.display='none';
-  document.getElementById('sketchNextBtn').style.display='none';
+  const csb=document.getElementById('closeShapeBtn'),snb=document.getElementById('sketchNextBtn');
+  csb.classList.add('hidden');csb.style.display='none';
+  snb.classList.add('hidden');snb.style.display='none';
   document.getElementById('canvasInfo').classList.remove('visible');
   document.getElementById('sketchCaption').textContent='Tap corners of the deck in order. Enter each side length when prompted.';
   updateHint();redrawCanvas();
