@@ -418,6 +418,11 @@ button{cursor:pointer;border:none;background:none;}
     <div class="modal-sub" id="modalSub">Side 1 of your deck</div>
     <input class="modal-input" type="number" id="dimensionInput" placeholder="4.2" step="0.1" min="0.1" max="50" inputmode="decimal">
     <div class="modal-unit">metres</div>
+    <div id="angleRow" style="display:none;margin-top:20px;border-top:1px solid #E5E7EB;padding-top:18px;">
+      <div style="font-size:13px;font-weight:600;color:#6B7280;margin-bottom:8px;">Internal angle at this corner</div>
+      <input class="modal-input" type="number" id="angleInput" placeholder="90" step="1" min="1" max="359" inputmode="decimal">
+      <div class="modal-unit">degrees &nbsp;<span style="color:#F5761A;font-size:11px;font-weight:600;">90 = right angle</span></div>
+    </div>
     <button class="btn btn-primary" onclick="confirmDimension()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Confirm</button>
     <button class="btn btn-ghost mt-12" onclick="cancelDimension()">Cancel last point</button>
   </div>
@@ -534,10 +539,18 @@ const SNAP_R=28, PT_R=8, PT_R_FIRST=14;
 function initCanvas() {
   canvas=document.getElementById('deckCanvas'); ctx=canvas.getContext('2d');
   resizeCanvas(); redrawCanvas();
-  canvas.removeEventListener('touchstart',onCanvasTap);
-  canvas.removeEventListener('click',onCanvasClick);
-  canvas.addEventListener('touchstart',onCanvasTap,{passive:false});
-  canvas.addEventListener('click',onCanvasClick);
+  ['touchstart','touchmove','touchend','mousedown','mousemove','mouseup','click'].forEach(t=>{
+    canvas.removeEventListener(t,onCanvasTap);canvas.removeEventListener(t,onCanvasClick);
+    canvas.removeEventListener(t,onTouchStart);canvas.removeEventListener(t,onTouchMove);
+    canvas.removeEventListener(t,onTouchEnd);canvas.removeEventListener(t,onMouseDown);
+    canvas.removeEventListener(t,onMouseMove);canvas.removeEventListener(t,onMouseUp);
+  });
+  canvas.addEventListener('touchstart',onTouchStart,{passive:false});
+  canvas.addEventListener('touchmove',onTouchMove,{passive:false});
+  canvas.addEventListener('touchend',onTouchEnd,{passive:false});
+  canvas.addEventListener('mousedown',onMouseDown);
+  canvas.addEventListener('mousemove',onMouseMove);
+  canvas.addEventListener('mouseup',onMouseUp);
 }
 function resizeCanvas() {
   if (!canvas) return;
@@ -547,9 +560,60 @@ function resizeCanvas() {
   ctx.scale(dpr,dpr); redrawCanvas();
 }
 window.addEventListener('resize',resizeCanvas);
-function resetSketch() { APP.sketch={points:[],segments:[],closed:false,area:0,perimeter:0,scale:null,pendingPoint:null}; }
-function onCanvasTap(e) { e.preventDefault(); const t=e.changedTouches[0],r=canvas.getBoundingClientRect(); handleCanvasInput(t.clientX-r.left,t.clientY-r.top); }
-function onCanvasClick(e) { const r=canvas.getBoundingClientRect(); handleCanvasInput(e.clientX-r.left,e.clientY-r.top); }
+function resetSketch() { APP.sketch={points:[],segments:[],closed:false,area:0,perimeter:0,scale:null,pendingPoint:null,drag:null}; }
+function onCanvasTap(e){} function onCanvasClick(e){} // legacy stubs (replaced below)
+function onTouchStart(e){
+  e.preventDefault();
+  const t=e.changedTouches[0],r=canvas.getBoundingClientRect();
+  const x=t.clientX-r.left,y=t.clientY-r.top;
+  if(!tryStartDrag(x,y))handleCanvasInput(x,y);
+}
+function onTouchMove(e){
+  e.preventDefault();
+  if(!APP.sketch.drag)return;
+  const t=e.changedTouches[0],r=canvas.getBoundingClientRect();
+  doDrag(t.clientX-r.left,t.clientY-r.top);
+}
+function onTouchEnd(e){e.preventDefault();endDrag();}
+function onMouseDown(e){
+  const r=canvas.getBoundingClientRect();
+  const x=e.clientX-r.left,y=e.clientY-r.top;
+  if(!tryStartDrag(x,y))handleCanvasInput(x,y);
+}
+function onMouseMove(e){if(!APP.sketch.drag)return;const r=canvas.getBoundingClientRect();doDrag(e.clientX-r.left,e.clientY-r.top);}
+function onMouseUp(){endDrag();}
+// Detect if tap is on an existing point and start drag mode
+function tryStartDrag(x,y){
+  const sk=APP.sketch;
+  if(!sk.points.length||document.getElementById('dimensionModal').classList.contains('open'))return false;
+  const DRAG_R=Math.max(PT_R_FIRST,PT_R)*2.8;
+  for(let i=0;i<sk.points.length;i++){
+    if(!sk.closed&&i===0&&sk.points.length>=3)continue; // tap on first point closes shape
+    if(Math.hypot(sk.points[i].x-x,sk.points[i].y-y)<DRAG_R){sk.drag={idx:i};return true;}
+  }
+  return false;
+}
+function doDrag(x,y){
+  const sk=APP.sketch;if(!sk.drag||!sk.scale)return;
+  sk.points[sk.drag.idx]={x,y};recomputeFromPoints(sk);redrawCanvas();
+}
+function endDrag(){
+  const sk=APP.sketch;if(!sk.drag)return;sk.drag=null;
+  if(sk.closed){
+    document.getElementById('sketchCaption').textContent='Area: '+sk.area.toFixed(1)+' m² · Perimeter: '+sk.perimeter.toFixed(1)+' m';
+    document.getElementById('areaDisplay').textContent=sk.area.toFixed(1);
+  }
+  redrawCanvas();
+}
+function recomputeFromPoints(sk){
+  if(!sk.scale)return;
+  const pts=sk.points,n=pts.length;
+  for(let i=0;i<sk.segments.length;i++){
+    const a=pts[i],b=(sk.closed&&i===n-1)?pts[0]:(i<n-1?pts[i+1]:null);
+    if(b)sk.segments[i]={length:Math.max(Math.round(Math.hypot(b.x-a.x,b.y-a.y)/sk.scale*10)/10,0.1)};
+  }
+  if(sk.closed){sk.perimeter=sk.segments.reduce((s,seg)=>s+seg.length,0);sk.area=computeArea();}
+}
 function handleCanvasInput(x,y) {
   const sk=APP.sketch;
   if (sk.closed||document.getElementById('dimensionModal').classList.contains('open')) return;
@@ -563,9 +627,29 @@ function handleCanvasInput(x,y) {
 }
 function openDimModal(n,isClosing) {
   const modal=document.getElementById('dimensionModal'),input=document.getElementById('dimensionInput');
+  const sk=APP.sketch;
   document.getElementById('modalTitle').textContent=isClosing?'How long is the last side?':'How long is this side?';
   document.getElementById('modalSub').textContent=isClosing?'This will close the shape':'Side '+n+' of your deck';
-  input.value=''; modal.classList.add('open'); modal._closing=isClosing;
+  input.value='';
+  // Show angle input from 3rd point onwards
+  const showAngle=sk.points.length>=2&&!isClosing;
+  document.getElementById('angleRow').style.display=showAngle?'':'none';
+  if(showAngle&&sk.pendingPoint){
+    const np=sk.pendingPoint,last=sk.points[sk.points.length-1],prev=sk.points[sk.points.length-2];
+    const dInX=last.x-prev.x,dInY=last.y-prev.y;
+    const dTapX=np.x-last.x,dTapY=np.y-last.y;
+    const lenIn=Math.hypot(dInX,dInY),lenTap=Math.hypot(dTapX,dTapY);
+    let suggested=90;
+    if(lenIn>0&&lenTap>0){
+      // Internal angle = angle between reversed-incoming and tap direction
+      const cosA=((-dInX)*dTapX+(-dInY)*dTapY)/(lenIn*lenTap);
+      suggested=Math.round(Math.acos(Math.max(-1,Math.min(1,cosA)))*180/Math.PI);
+    }
+    document.getElementById('angleInput').value=suggested||90;
+    modal._inAngle=Math.atan2(dInY,dInX); // incoming segment direction in canvas space
+    modal._turnRight=(dInX*dTapY-dInY*dTapX)>=0; // cross >0 = right turn (CW) in screen coords
+  }
+  modal.classList.add('open');modal._closing=isClosing;modal._showAngle=showAngle;
   setTimeout(()=>input.focus(),350);
 }
 function confirmDimension() {
@@ -574,7 +658,15 @@ function confirmDimension() {
   const modal=document.getElementById('dimensionModal');
   modal.classList.remove('open');
   const sk=APP.sketch, last=sk.points[sk.points.length-1], np=sk.pendingPoint;
-  const angle=Math.atan2(np.y-last.y,np.x-last.x);
+  let angle;
+  if(modal._showAngle){
+    // Use entered internal angle to compute outgoing direction
+    const deg=parseFloat(document.getElementById('angleInput').value)||90;
+    const ext=(180-deg)*Math.PI/180; // exterior/turn angle (positive = acute, negative = reflex)
+    angle=modal._turnRight?modal._inAngle+ext:modal._inAngle-ext;
+  } else {
+    angle=Math.atan2(np.y-last.y,np.x-last.x);
+  }
   if (!sk.scale){const maxPx=Math.min(canvas.clientWidth,canvas.clientHeight)*0.5;sk.scale=maxPx/val;}
   const px=val*sk.scale, ex=last.x+Math.cos(angle)*px, ey=last.y+Math.sin(angle)*px;
   if (modal._closing) {
@@ -651,11 +743,40 @@ function redrawCanvas(){
   // points
   sk.points.forEach((p,i)=>{
     const first=i===0,r=first?PT_R_FIRST:PT_R;
+    if(sk.drag&&sk.drag.idx===i){
+      ctx.beginPath();ctx.arc(p.x,p.y,r+8,0,Math.PI*2);
+      ctx.strokeStyle='rgba(245,118,26,0.45)';ctx.lineWidth=3;ctx.setLineDash([]);ctx.stroke();
+    }
     ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);
     ctx.fillStyle=first?'#F5761A':'#1A1A1A';ctx.fill();
     ctx.strokeStyle='#FFF';ctx.lineWidth=2.5;ctx.stroke();
   });
-  // snap ring
+  // Angle labels at each vertex (shown when shape closed or during drag)
+  if((sk.closed||sk.drag)&&sk.points.length>=3){
+    const pts=sk.points,n=pts.length;
+    let sa2=0;for(let i=0;i<n;i++){const j=(i+1)%n;sa2+=pts[i].x*pts[j].y-pts[j].x*pts[i].y;}
+    for(let i=0;i<n;i++){
+      const prev=pts[(i-1+n)%n],curr=pts[i],next=pts[(i+1)%n];
+      const v1x=prev.x-curr.x,v1y=prev.y-curr.y,v2x=next.x-curr.x,v2y=next.y-curr.y;
+      const len1=Math.hypot(v1x,v1y),len2=Math.hypot(v2x,v2y);
+      if(!len1||!len2)continue;
+      const cosA=(v1x*v2x+v1y*v2y)/(len1*len2);
+      let deg=Math.round(Math.acos(Math.max(-1,Math.min(1,cosA)))*180/Math.PI);
+      const cross=v1x*v2y-v1y*v2x;
+      if(sa2>0?cross<0:cross>0)deg=360-deg; // reflex vertex
+      // Position: offset toward interior (bisector direction)
+      const bx=v1x/len1+v2x/len2,by=v1y/len1+v2y/len2;
+      const blen=Math.hypot(bx,by)||1;
+      const lx=curr.x+bx/blen*34,ly=curr.y+by/blen*34;
+      ctx.save();
+      ctx.fillStyle='rgba(245,118,26,0.92)';
+      ctx.beginPath();ctx.roundRect(lx-22,ly-11,44,22,5);ctx.fill();
+      ctx.fillStyle='#FFF';ctx.font='bold 11px -apple-system,system-ui,sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(deg+'°',lx,ly);
+      ctx.restore();
+    }
+  }
+  // snap ring on first point when shape is open
   if(sk.points.length>=3&&!sk.closed){
     const fp=sk.points[0];
     ctx.beginPath();ctx.arc(fp.x,fp.y,PT_R_FIRST+8,0,Math.PI*2);
