@@ -780,22 +780,43 @@ function pip(px,py,poly){
   }
   return inside;
 }
-// Returns all post positions [mx,my] in metres (relative to bounding box):
-// grid intersections inside polygon + all corner vertices not already near a grid post
+// Find x positions where a horizontal line at y intersects the polygon edges
+function polyXsAtY(poly,y){
+  const n=poly.length,xs=[];
+  for(let i=0,j=n-1;i<n;j=i++){
+    const x1=poly[j][0],y1=poly[j][1],x2=poly[i][0],y2=poly[i][1];
+    if(Math.abs(y2-y1)<1e-9){if(Math.abs(y-y1)<1e-9)xs.push(x1,x2);}
+    else if((y1<=y&&y<y2)||(y2<=y&&y<y1))xs.push(x1+(y-y1)*(x2-x1)/(y2-y1));
+  }
+  return xs;
+}
+// Returns all post positions [mx,my] in metres.
+// For each bearer row: boundary posts (polygon edge) + interior grid posts.
+// pip() misses boundary points, so we use polyXsAtY() to find the actual
+// left/right polygon extents at each row — ensuring every bearer is supported.
 function getPostPositions(deck,postSpM){
   const poly=deckPolyMetres(deck);
   if(!poly)return[];
-  const maxX=Math.max(...poly.map(p=>p[0])),maxY=Math.max(...poly.map(p=>p[1]));
+  const maxY=Math.max(...poly.map(p=>p[1]));
   const thresh=postSpM*0.3;
   const posts=[];
-  for(let xi=0;xi*postSpM<=maxX+0.05;xi++)
-    for(let yi=0;yi*postSpM<=maxY+0.05;yi++)
-      if(pip(xi*postSpM,yi*postSpM,poly))
-        posts.push([xi*postSpM,yi*postSpM]);
-  // Corner posts: every polygon vertex must have a post
-  for(const[cx,cy]of poly)
-    if(!posts.some(([gx,gy])=>Math.hypot(cx-gx,cy-gy)<thresh))
-      posts.push([cx,cy]);
+  const add=(x,y)=>{if(!posts.some(([px,py])=>Math.hypot(px-x,py-y)<thresh))posts.push([x,y]);};
+  // Bearer rows: grid + polygon bottom (in case maxY falls between grid rows)
+  const rows=new Set();
+  for(let yi=0;yi*postSpM<=maxY+0.05;yi++) rows.add(+(yi*postSpM).toFixed(9));
+  rows.add(+maxY.toFixed(9));
+  for(const y of [...rows].sort((a,b)=>a-b)){
+    const xs=polyXsAtY(poly,y).sort((a,b)=>a-b);
+    if(xs.length<2)continue;
+    const xMin=xs[0],xMax=xs[xs.length-1];
+    add(xMin,y); add(xMax,y); // boundary posts — always required
+    for(let xi=0;xi*postSpM<=xMax+0.05;xi++){
+      const x=xi*postSpM;
+      if(x>xMin+thresh&&x<xMax-thresh) add(x,y); // interior grid posts
+    }
+  }
+  // Corner posts for any vertex not already near a row post
+  for(const[cx,cy]of poly) add(cx,cy);
   return posts;
 }
 function countPostsInPoly(deck,postSpM){
@@ -1038,10 +1059,14 @@ function buildDiagrams(q, p, LOGO) {
 
   // ── Subframe elements (all clipped to polygon) ──
   let bearSVG='',joistSVG='',postSVG='';
-  for (let y=oy; y<=oy+dH+1; y+=postSpM*dSc)
-    bearSVG+=`<line x1="${ox.toFixed(1)}" y1="${y.toFixed(1)}" x2="${(ox+dW).toFixed(1)}" y2="${y.toFixed(1)}" stroke="#E8891A" stroke-width="4" stroke-linecap="round"/>`;
-  if (dH%(postSpM*dSc)>2)
-    bearSVG+=`<line x1="${ox.toFixed(1)}" y1="${(oy+dH).toFixed(1)}" x2="${(ox+dW).toFixed(1)}" y2="${(oy+dH).toFixed(1)}" stroke="#E8891A" stroke-width="4" stroke-linecap="round"/>`;
+  // Bearer rows: same grid as getPostPositions() — grid rows + polygon bottom
+  {const bearRows=new Set();
+  for(let yi=0;yi*postSpM<=realH+0.05;yi++) bearRows.add(+(yi*postSpM).toFixed(9));
+  bearRows.add(+realH.toFixed(9));
+  for(const mr of [...bearRows].sort((a,b)=>a-b)){
+    const sy=(oy+mr*dSc).toFixed(1);
+    bearSVG+=`<line x1="${ox.toFixed(1)}" y1="${sy}" x2="${(ox+dW).toFixed(1)}" y2="${sy}" stroke="#E8891A" stroke-width="4" stroke-linecap="round"/>`;
+  }}
   for (let x=ox; x<=ox+dW+1; x+=joistSpM*dSc)
     joistSVG+=`<line x1="${x.toFixed(1)}" y1="${oy.toFixed(1)}" x2="${x.toFixed(1)}" y2="${(oy+dH).toFixed(1)}" stroke="#3A3A3A" stroke-width="1.5"/>`;
   getPostPositions(deck,postSpM).forEach(([mx,my])=>{
