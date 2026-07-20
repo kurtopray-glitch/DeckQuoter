@@ -567,8 +567,29 @@ function showScreen(id) {
   if (el) el.classList.add('active');
   APP.currentScreen = id;
 }
-function goBack() { showScreen(APP.screenHistory.pop() || 'home'); }
-function navigateTo(id) { APP.screenHistory.push(APP.currentScreen); showScreen(id); if(id==='staff')renderStaffList(); }
+function navigateTo(id) { APP.screenHistory.push(APP.currentScreen); showScreen(id); if(id==='staff')renderStaffList(); if(id==='sketch')onShowSketch(); }
+function goBack() { const id=APP.screenHistory.pop()||'home'; showScreen(id); if(id==='staff')renderStaffList(); if(id==='sketch')onShowSketch(); }
+function onShowSketch() {
+  resizeCanvas();
+  const sk=APP.sketch;
+  const ci=document.getElementById('canvasInfo'),csb=document.getElementById('closeShapeBtn'),snb=document.getElementById('sketchNextBtn');
+  if (sk.closed) {
+    ci.classList.remove('hidden');ci.classList.add('visible');
+    document.getElementById('areaDisplay').textContent=sk.area.toFixed(1);
+    csb.classList.add('hidden');csb.style.display='none';
+    snb.classList.remove('hidden');snb.style.display='';
+    document.getElementById('sketchCaption').textContent='Area: '+sk.area.toFixed(1)+' m² · Perimeter: '+sk.perimeter.toFixed(1)+' m';
+  } else {
+    ci.classList.add('hidden');ci.classList.remove('visible');
+    snb.classList.add('hidden');snb.style.display='none';
+    if(sk.points.length>=3){csb.classList.remove('hidden');csb.style.display='';}
+    else{csb.classList.add('hidden');csb.style.display='none';}
+    document.getElementById('sketchCaption').textContent=sk.points.length===0
+      ?'Tap corners of the deck in order. Enter each side length when prompted.'
+      :'Tap to continue adding corners...';
+  }
+  updateHint();redrawCanvas();
+}
 
 // ═══ HOME ═══
 function loadQuotes() {
@@ -612,7 +633,24 @@ function openQuote(id) {
   const q = APP.quotes.find(x => x.id === id);
   if (!q) return;
   APP.currentQuote = JSON.parse(JSON.stringify(q));
+  if (q.deck && q.deck.points && q.deck.points.length) restoreSketchFromDeck(APP.currentQuote.deck);
+  else resetSketch();
   populateClientForm(q.client); navigateTo('client');
+}
+function restoreSketchFromDeck(deck) {
+  if (!deck || !deck.points || !deck.points.length) { resetSketch(); return; }
+  let scale = deck.scale;
+  if (!scale && deck.points.length >= 2 && deck.segments && deck.segments.length) {
+    const p0=deck.points[0],p1=deck.points[1];
+    const pixLen=Math.hypot(p1.x-p0.x,p1.y-p0.y);
+    if (pixLen && deck.segments[0].length) scale = pixLen / deck.segments[0].length;
+  }
+  APP.sketch = {
+    points: deck.points.map(p => ({x:p.x,y:p.y})),
+    segments: (deck.segments||[]).map(s => ({length:s.length})),
+    closed: true, area: deck.area||0, perimeter: deck.perimeter||0,
+    scale: scale||null, pendingPoint: null, drag: null
+  };
 }
 
 // ═══ CLIENT ═══
@@ -804,6 +842,7 @@ function endDrag(){
   if(sk.closed){
     document.getElementById('sketchCaption').textContent='Area: '+sk.area.toFixed(1)+' m² · Perimeter: '+sk.perimeter.toFixed(1)+' m';
     document.getElementById('areaDisplay').textContent=sk.area.toFixed(1);
+    saveSketchToQuote();saveCurrentQuote();
   }
   redrawCanvas();
 }
@@ -898,6 +937,7 @@ function doCloseShape(){
   csb.classList.add('hidden');csb.style.display='none';
   snb.classList.remove('hidden');snb.style.display='';
   document.getElementById('sketchCaption').textContent='Area: '+sk.area.toFixed(1)+' m² · Perimeter: '+sk.perimeter.toFixed(1)+' m';
+  saveSketchToQuote();saveCurrentQuote();
   updateHint();redrawCanvas();
 }
 function closeShape(){doCloseShape();}
@@ -1017,9 +1057,14 @@ function clearSketch(){
   document.getElementById('sketchCaption').textContent='Tap corners of the deck in order. Enter each side length when prompted.';
   updateHint();redrawCanvas();
 }
+function saveSketchToQuote(){
+  const sk=APP.sketch;
+  if(APP.currentQuote&&sk.closed)
+    APP.currentQuote.deck={points:sk.points.map(p=>({x:p.x,y:p.y})),segments:sk.segments.map(s=>({length:s.length})),area:sk.area,perimeter:sk.perimeter,scale:sk.scale};
+}
 function goToHeight(){
   const sk=APP.sketch;if(!sk.closed||sk.area<=0)return;
-  APP.currentQuote.deck={points:sk.points,segments:sk.segments,area:sk.area,perimeter:sk.perimeter};
+  saveSketchToQuote();
   saveCurrentQuote();navigateTo('height');
   document.getElementById('deckHeight').value='';updateHeightInfo(null);
 }
