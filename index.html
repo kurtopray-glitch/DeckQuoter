@@ -567,8 +567,8 @@ function showScreen(id) {
   if (el) el.classList.add('active');
   APP.currentScreen = id;
 }
-function navigateTo(id) { APP.screenHistory.push(APP.currentScreen); showScreen(id); if(id==='staff')renderStaffList(); if(id==='sketch')onShowSketch(); }
-function goBack() { const id=APP.screenHistory.pop()||'home'; showScreen(id); if(id==='staff')renderStaffList(); if(id==='sketch')onShowSketch(); }
+function navigateTo(id) { APP.screenHistory.push(APP.currentScreen); showScreen(id); if(id==='staff')renderStaffList(); if(id==='sketch')onShowSketch(); if(id==='height')onShowHeight(); }
+function goBack() { const id=APP.screenHistory.pop()||'home'; showScreen(id); if(id==='staff')renderStaffList(); if(id==='sketch')onShowSketch(); if(id==='height')onShowHeight(); }
 function onShowSketch() {
   resizeCanvas();
   const sk=APP.sketch;
@@ -589,6 +589,11 @@ function onShowSketch() {
       :'Tap to continue adding corners...';
   }
   updateHint();redrawCanvas();
+}
+function onShowHeight(){
+  const h=APP.currentQuote&&APP.currentQuote.height;
+  if(h){document.getElementById('deckHeight').value=h;updateHeightVisual(h);updateHeightInfo(h);}
+  else{document.getElementById('deckHeight').value='';updateHeightInfo(null);}
 }
 
 // ═══ HOME ═══
@@ -1066,7 +1071,6 @@ function goToHeight(){
   const sk=APP.sketch;if(!sk.closed||sk.area<=0)return;
   saveSketchToQuote();
   saveCurrentQuote();navigateTo('height');
-  document.getElementById('deckHeight').value='';updateHeightInfo(null);
 }
 
 // ═══ HEIGHT ═══
