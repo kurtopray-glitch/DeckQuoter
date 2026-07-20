@@ -245,6 +245,47 @@ button{cursor:pointer;border:none;background:none;}
 .spec-seg-btn.active{background:var(--white);color:var(--charcoal);box-shadow:var(--shadow-sm);font-weight:700;}
 .spec-seg-btn.warn{color:var(--red);}
 .spec-warn{background:#FEF2F2;border:1px solid #FECACA;border-radius:6px;padding:8px 12px;font-size:12px;color:var(--red);margin-top:8px;line-height:1.5;}
+/* Staff Screen */
+.staff-card{background:var(--white);border-radius:var(--radius-lg);padding:16px 18px;box-shadow:var(--shadow-sm);display:flex;align-items:center;gap:14px;margin-bottom:10px;border:1.5px solid transparent;}
+.staff-card:active{border-color:var(--orange);}
+.staff-avatar-icon{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--black),var(--black-light));display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:var(--orange-light);flex-shrink:0;}
+.staff-info{flex:1;min-width:0;}
+.staff-name{font-size:16px;font-weight:700;color:var(--charcoal);}
+.staff-rate{font-size:13px;color:var(--grey);margin-top:2px;}
+.staff-badges{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-green{background:#ECFDF5;color:#059669;}
+.badge-blue{background:#EFF6FF;color:#2563EB;}
+.badge-grey{background:var(--grey-pale);color:var(--grey-dark);}
+.staff-edit-btn{width:36px;height:36px;border-radius:10px;background:var(--grey-pale);display:flex;align-items:center;justify-content:center;color:var(--grey);flex-shrink:0;}
+/* Labour section in quote */
+.labour-staff-card{background:var(--white);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);margin-bottom:12px;}
+.labour-staff-header{padding:10px 16px;background:var(--grey-pale);display:flex;align-items:center;justify-content:space-between;}
+.labour-staff-head-text{font-size:11px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:0.8px;}
+.labour-add-btn{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:var(--orange);padding:5px 12px;background:rgba(245,118,26,0.10);border-radius:20px;}
+.labour-person-row{padding:12px 16px;border-bottom:1px solid var(--grey-light);}
+.labour-person-row:last-child{border-bottom:none;}
+.labour-person-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.labour-person-name{font-size:14px;font-weight:700;color:var(--charcoal);flex:1;}
+.labour-person-cost{font-size:15px;font-weight:700;color:var(--black);}
+.labour-person-del{width:28px;height:28px;border-radius:7px;background:var(--grey-pale);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.labour-inputs-row{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;}
+.labour-field{display:flex;flex-direction:column;gap:4px;}
+.labour-field-label{font-size:11px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:0.4px;}
+.labour-num-input{width:66px;height:42px;background:var(--grey-pale);border:2px solid transparent;border-radius:8px;text-align:center;font-size:18px;font-weight:700;color:var(--charcoal);-webkit-appearance:none;appearance:none;}
+.labour-num-input:focus{border-color:var(--orange);background:var(--white);}
+.labour-total-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--grey-pale);}
+.labour-total-label{font-size:13px;font-weight:700;color:var(--grey-dark);}
+.labour-total-value{font-size:16px;font-weight:800;color:var(--black);}
+.labour-empty-note{padding:18px 16px;text-align:center;color:var(--grey);font-size:13px;}
+/* Staff picker modal */
+.staff-pick-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--grey-light);}
+.staff-pick-item:last-child{border-bottom:none;}
+.staff-pick-item:active{background:var(--grey-pale);}
+.staff-pick-avatar{width:38px;height:38px;border-radius:10px;background:var(--black);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--orange-light);flex-shrink:0;}
+.staff-pick-info{flex:1;}
+.staff-pick-name{font-size:15px;font-weight:700;color:var(--charcoal);}
+.staff-pick-rate{font-size:12px;color:var(--grey);margin-top:2px;}
 
 /* Animations */
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -277,6 +318,7 @@ button{cursor:pointer;border:none;background:none;}
         <div><div class="hero-greeting">Ready to quote?</div><div class="hero-title">Build a <span>professional</span> deck quote in minutes</div></div>
       </div>
       <button class="hero-btn" onclick="startNewQuote()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> New Quote</button>
+      <button onclick="navigateTo('staff')" style="display:flex;align-items:center;gap:10px;width:100%;height:50px;margin-top:10px;background:rgba(255,255,255,0.07);border-radius:var(--radius-md);font-size:15px;font-weight:700;color:rgba(255,255,255,0.75);padding:0 18px;border:1px solid rgba(255,255,255,0.12);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Manage Staff<svg style="margin-left:auto" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
     </div>
     <div class="section-header fade-in fade-in-delay-1">
       <div class="section-title">Recent Quotes</div>
@@ -409,6 +451,13 @@ button{cursor:pointer;border:none;background:none;}
   </div>
 </div>
 
+<!-- ═══ STAFF ═══ -->
+<div id="screen-staff" class="screen">
+  <div class="app-header"><div class="header-inner"><button class="back-btn" onclick="goBack()"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 4 6 10 12 16"/></svg>Back</button><div class="header-title">Staff Members</div><button class="header-action" onclick="openStaffModal()">Add</button></div></div>
+  <div class="screen-body padded-bottom" id="staffListContainer"></div>
+  <div class="sticky-footer"><button class="btn btn-primary" onclick="openStaffModal()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Staff Member</button></div>
+</div>
+
 <!-- ═══ DIMENSION MODAL ═══ -->
 <div class="modal-overlay" id="dimensionModal">
   <div class="modal-sheet">
@@ -425,6 +474,35 @@ button{cursor:pointer;border:none;background:none;}
     </div>
     <button class="btn btn-primary" onclick="confirmDimension()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Confirm</button>
     <button class="btn btn-ghost mt-12" onclick="cancelDimension()">Cancel last point</button>
+  </div>
+</div>
+
+<!-- ═══ STAFF MODAL ═══ -->
+<div class="modal-overlay" id="staffModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="staffModalTitle">Add Staff Member</div>
+    <div class="modal-sub" id="staffModalSub">Enter their details below</div>
+    <div style="margin-bottom:14px;"><div style="font-size:12px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">Name</div><input class="field-input" type="text" id="staffName" placeholder="e.g. Paul" autocorrect="off" style="height:52px;font-size:18px;"></div>
+    <div style="margin-bottom:18px;display:flex;gap:10px;align-items:flex-end;"><div style="flex:1;"><div style="font-size:12px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">Hourly Rate</div><input class="field-input" type="number" id="staffRate" placeholder="85" inputmode="decimal" style="height:52px;font-size:18px;"></div><div style="padding-bottom:14px;font-size:16px;font-weight:700;color:var(--grey);">/hr</div></div>
+    <div style="border-top:1px solid var(--grey-light);padding-top:16px;margin-bottom:14px;"><div style="font-size:12px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">Superannuation (11.5%)</div><div class="segmented"><button class="seg-btn active" id="superInc" onclick="staffSuperToggle(true)">Included in rate</button><button class="seg-btn" id="superAdd" onclick="staffSuperToggle(false)">Add on top</button></div></div>
+    <div style="margin-bottom:20px;"><div style="font-size:12px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">GST</div><div class="segmented"><button class="seg-btn active" id="gstNo" onclick="staffGstToggle(false)">Not applicable</button><button class="seg-btn" id="gstYes" onclick="staffGstToggle(true)">Subcontractor (+10%)</button></div></div>
+    <div id="staffModalError" class="error-msg" style="display:none;margin-bottom:12px;">Please enter a name and hourly rate.</div>
+    <button class="btn btn-primary" onclick="saveStaffMember()">Save</button>
+    <button class="btn btn-ghost mt-12" id="staffDeleteBtn" style="display:none;color:var(--red);" onclick="deleteStaffMember()">Delete Staff Member</button>
+    <button class="btn btn-ghost mt-12" onclick="closeStaffModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- ═══ STAFF PICKER MODAL ═══ -->
+<div class="modal-overlay" id="staffPickerModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Add Staff to Job</div>
+    <div class="modal-sub">Select who's working on this quote</div>
+    <div id="staffPickerList" style="border:1px solid var(--grey-light);border-radius:var(--radius-md);overflow:hidden;margin-bottom:16px;max-height:320px;overflow-y:auto;"></div>
+    <div id="staffPickerEmpty" style="display:none;text-align:center;padding:24px;color:var(--grey);font-size:14px;">No staff yet — <button onclick="closeStaffPicker();navigateTo('staff');" style="color:var(--orange);font-weight:700;">add staff members</button></div>
+    <button class="btn btn-ghost" onclick="closeStaffPicker()">Cancel</button>
   </div>
 </div>
 
@@ -448,7 +526,8 @@ const APP = {
     'metal-stump': 42.00,
     'joist-hanger': 2.80, 'post-base': 14.50, 'screws-box': 18.00,
   },
-  sketch: { points:[], segments:[], closed:false, area:0, perimeter:0, scale:null, pendingPoint:null }
+  sketch: { points:[], segments:[], closed:false, area:0, perimeter:0, scale:null, pendingPoint:null },
+  staff: []
 };
 
 // ═══ NAVIGATION ═══
@@ -459,14 +538,16 @@ function showScreen(id) {
   APP.currentScreen = id;
 }
 function goBack() { showScreen(APP.screenHistory.pop() || 'home'); }
-function navigateTo(id) { APP.screenHistory.push(APP.currentScreen); showScreen(id); }
+function navigateTo(id) { APP.screenHistory.push(APP.currentScreen); showScreen(id); if(id==='staff')renderStaffList(); }
 
 // ═══ HOME ═══
 function loadQuotes() {
   try { APP.quotes = JSON.parse(localStorage.getItem('dq_quotes') || '[]'); } catch(e) { APP.quotes = []; }
+  try { APP.staff = JSON.parse(localStorage.getItem('dq_staff') || '[]'); } catch(e) { APP.staff = []; }
   renderQuotesList();
 }
 function saveQuotes() { localStorage.setItem('dq_quotes', JSON.stringify(APP.quotes)); }
+function saveStaff() { localStorage.setItem('dq_staff', JSON.stringify(APP.staff)); }
 function materialLabel(k) {
   return {'ekodeck-classic':'Ekodeck Classic','ekodeck-plus':'Ekodeck Plus','merbau':'Merbau','spotted-gum':'Spotted Gum','blackbutt':'Blackbutt'}[k] || k;
 }
@@ -492,7 +573,7 @@ function renderQuotesList() {
   }).join('');
 }
 function startNewQuote() {
-  APP.currentQuote = { id:'q_'+Date.now(), client:{}, deck:null, height:null, material:null, pricing:null, total:null, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
+  APP.currentQuote = { id:'q_'+Date.now(), client:{}, deck:null, height:null, material:null, pricing:null, total:null, labourItems:[], createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
   APP.specs = { postSpacing:'auto', postType:'timber', bearerOvr:null, joistOvr:null };
   APP.specsOpen = false;
   resetSketch(); clearClientForm(); navigateTo('client');
@@ -534,6 +615,97 @@ function submitClientDetails() {
 }
 
 // ═══ SKETCH ═══
+// ═══ STAFF ═══
+let _staffModalId=null,_staffSuperIncluded=true,_staffGstApplies=false;
+
+function renderStaffList(){
+  const el=document.getElementById('staffListContainer');if(!el)return;
+  if(!APP.staff.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">👷</div><div class="empty-title">No staff yet</div><div class="empty-sub">Tap Add Staff Member to set up your team</div></div>';return;
+  }
+  el.innerHTML=APP.staff.map(s=>{
+    const init=(s.name||'?')[0].toUpperCase();
+    const badges=[];
+    if(!s.superIncluded)badges.push('<span class="badge badge-blue">+11.5% Super</span>');
+    if(s.gstApplies)badges.push('<span class="badge badge-green">+GST (subcontractor)</span>');
+    if(s.superIncluded&&!s.gstApplies)badges.push('<span class="badge badge-grey">Super incl. · Employee</span>');
+    return`<div class="staff-card fade-in"><div class="staff-avatar-icon">${init}</div><div class="staff-info"><div class="staff-name">${s.name}</div><div class="staff-rate">$${s.hourlyRate}/hr</div><div class="staff-badges">${badges.join('')}</div></div><button class="staff-edit-btn" onclick="openStaffModal('${s.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button></div>`;
+  }).join('');
+}
+function openStaffModal(id){
+  _staffModalId=id||null;
+  const s=id?APP.staff.find(x=>x.id===id):null;
+  document.getElementById('staffModalTitle').textContent=s?'Edit Staff Member':'Add Staff Member';
+  document.getElementById('staffModalSub').textContent=s?s.name:'Enter their details below';
+  document.getElementById('staffName').value=s?s.name:'';
+  document.getElementById('staffRate').value=s?s.hourlyRate:'';
+  _staffSuperIncluded=s?s.superIncluded:true;
+  _staffGstApplies=s?s.gstApplies:false;
+  staffSuperToggle(_staffSuperIncluded);staffGstToggle(_staffGstApplies);
+  document.getElementById('staffDeleteBtn').style.display=s?'':'none';
+  document.getElementById('staffModalError').style.display='none';
+  document.getElementById('staffModal').classList.add('open');
+  setTimeout(()=>document.getElementById('staffName').focus(),350);
+}
+function closeStaffModal(){document.getElementById('staffModal').classList.remove('open');}
+function staffSuperToggle(inc){
+  _staffSuperIncluded=inc;
+  document.getElementById('superInc').classList.toggle('active',inc);
+  document.getElementById('superAdd').classList.toggle('active',!inc);
+}
+function staffGstToggle(applies){
+  _staffGstApplies=applies;
+  document.getElementById('gstNo').classList.toggle('active',!applies);
+  document.getElementById('gstYes').classList.toggle('active',applies);
+}
+function saveStaffMember(){
+  const name=document.getElementById('staffName').value.trim();
+  const rate=parseFloat(document.getElementById('staffRate').value);
+  if(!name||!rate||rate<=0){document.getElementById('staffModalError').style.display='';return;}
+  if(_staffModalId){
+    const s=APP.staff.find(x=>x.id===_staffModalId);
+    if(s){s.name=name;s.hourlyRate=rate;s.superIncluded=_staffSuperIncluded;s.gstApplies=_staffGstApplies;}
+  }else{
+    APP.staff.push({id:'st_'+Date.now(),name,hourlyRate:rate,superIncluded:_staffSuperIncluded,gstApplies:_staffGstApplies});
+  }
+  saveStaff();closeStaffModal();renderStaffList();
+}
+function deleteStaffMember(){
+  if(!_staffModalId)return;
+  const s=APP.staff.find(x=>x.id===_staffModalId);
+  if(!confirm('Remove '+(s?s.name:'this person')+'?'))return;
+  APP.staff=APP.staff.filter(x=>x.id!==_staffModalId);
+  saveStaff();closeStaffModal();renderStaffList();
+}
+function openStaffPicker(){
+  const el=document.getElementById('staffPickerList'),empty=document.getElementById('staffPickerEmpty');
+  if(!APP.staff.length){el.style.display='none';empty.style.display='';}
+  else{
+    el.style.display='';empty.style.display='none';
+    el.innerHTML=APP.staff.map(s=>{
+      const init=(s.name||'?')[0].toUpperCase();
+      const note=(!s.superIncluded?'super +11.5%':'super incl.')+(s.gstApplies?' · +GST':'');
+      return`<div class="staff-pick-item" onclick="addLabourItem('${s.id}')"><div class="staff-pick-avatar">${init}</div><div class="staff-pick-info"><div class="staff-pick-name">${s.name}</div><div class="staff-pick-rate">$${s.hourlyRate}/hr · ${note}</div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>`;
+    }).join('');
+  }
+  document.getElementById('staffPickerModal').classList.add('open');
+}
+function closeStaffPicker(){document.getElementById('staffPickerModal').classList.remove('open');}
+function addLabourItem(staffId){
+  const s=APP.staff.find(x=>x.id===staffId);if(!s)return;
+  if(!APP.currentQuote.labourItems)APP.currentQuote.labourItems=[];
+  APP.currentQuote.labourItems.push({staffId:s.id,name:s.name,hourlyRate:s.hourlyRate,superIncluded:s.superIncluded,gstApplies:s.gstApplies,days:1,hours:0});
+  closeStaffPicker();rerender();
+}
+function removeLabourItem(idx){
+  if(!APP.currentQuote.labourItems)return;
+  APP.currentQuote.labourItems.splice(idx,1);rerender();
+}
+function updateLabourItem(idx,field,val){
+  if(!APP.currentQuote.labourItems)return;
+  APP.currentQuote.labourItems[idx][field]=Math.max(0,parseFloat(val)||0);rerender();
+}
+
 let canvas, ctx;
 const SNAP_R=28, PT_R=8, PT_R_FIRST=14;
 function initCanvas() {
@@ -1035,7 +1207,14 @@ function computeQuote(){
   );
 
   const matCost=items.reduce((s,i)=>s+i.cost,0);
-  const labourCost=area*APP.labourRate;
+  const labItems=(q.labourItems||[]);
+  const labourCost=labItems.reduce((sum,li)=>{
+    const hrs=li.days*8+li.hours;
+    const base=hrs*li.hourlyRate;
+    const superAmt=li.superIncluded?0:base*0.115;
+    const sub=base+superAmt;
+    return sum+sub+(li.gstApplies?sub*0.10:0);
+  },0);
   const sub=matCost+labourCost,mkAmt=sub*APP.markup,exGST=sub+mkAmt,gst=exGST*0.10,total=exGST+gst;
   const notes=[];
   if(height>2.5)notes.push('Engineer certification required for decks above 2.5m in SA');
@@ -1126,8 +1305,26 @@ function renderQuoteScreen(pr){
   });
   html+='</div>';
   html+=specsCardHTML(pr);
+  // Labour section
+  const labItems=q.labourItems||[];
+  let lhtml='<div class="labour-staff-card fade-in fade-in-delay-2"><div class="labour-staff-header"><div class="labour-staff-head-text">Labour</div><button class="labour-add-btn" onclick="openStaffPicker()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Staff</button></div>';
+  if(!labItems.length){lhtml+='<div class="labour-empty-note">No staff added — tap Add Staff above</div>';}
+  else{
+    labItems.forEach((li,idx)=>{
+      const hrs=li.days*8+li.hours;
+      const base=hrs*li.hourlyRate;
+      const superAmt=li.superIncluded?0:base*0.115;
+      const sub=base+superAmt;
+      const total=sub+(li.gstApplies?sub*0.10:0);
+      const init=(li.name||'?')[0].toUpperCase();
+      const note=`${hrs}h @ $${li.hourlyRate}/hr`+(li.superIncluded?'':' +super')+(li.gstApplies?' +GST':'');
+      lhtml+=`<div class="labour-person-row"><div class="labour-person-top"><div class="staff-avatar-icon" style="width:32px;height:32px;font-size:13px;border-radius:9px;">${init}</div><div class="labour-person-name">${li.name}</div><div class="labour-person-cost">${fmt(total)}</div><button class="labour-person-del" onclick="removeLabourItem(${idx})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--grey)" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div><div class="labour-inputs-row"><div class="labour-field"><div class="labour-field-label">Days</div><input class="labour-num-input" type="number" value="${li.days}" min="0" step="0.5" oninput="updateLabourItem(${idx},'days',this.value)" inputmode="decimal"></div><div style="padding-bottom:10px;color:var(--grey);font-size:14px;font-weight:700;">× 8h +</div><div class="labour-field"><div class="labour-field-label">Hours</div><input class="labour-num-input" type="number" value="${li.hours}" min="0" step="0.5" oninput="updateLabourItem(${idx},'hours',this.value)" inputmode="decimal"></div><div style="flex:1;padding-bottom:8px;font-size:12px;color:var(--grey);line-height:1.4;">${note}</div></div></div>`;
+    });
+    lhtml+=`<div class="labour-total-row"><div class="labour-total-label">Labour Total</div><div class="labour-total-value">${fmt(pr.labourCost)}</div></div>`;
+  }
+  lhtml+='</div>';
+  html+=lhtml;
   html+='<div class="totals-card fade-in fade-in-delay-2">';
-  html+='<div class="labour-row"><div class="labour-label">Labour rate</div><input class="labour-input" type="number" id="labourRateInput" value="'+APP.labourRate+'" min="0" max="200" oninput="updateLabourRate(this.value)"><div class="labour-unit">/m² × '+pr.area.toFixed(1)+' m²</div></div>';
   html+='<div class="totals-row"><div class="totals-label">Materials</div><div class="totals-value">'+fmt(pr.materialsCost)+'</div></div>';
   html+='<div class="totals-row"><div class="totals-label">Labour</div><div class="totals-value">'+fmt(pr.labourCost)+'</div></div>';
   html+='<div class="markup-control-row"><div class="markup-label">Margin</div><div class="markup-value-display" id="qt-markup-pct">'+Math.round(APP.markup*100)+'% <span style="color:#6B7280;font-size:13px;font-weight:500;">('+fmt(pr.markupAmt)+')</span></div></div>';
