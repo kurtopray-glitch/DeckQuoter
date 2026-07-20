@@ -226,6 +226,36 @@ button{cursor:pointer;border:none;background:none;}
 .markup-slider{width:100%;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:var(--grey-light);outline:none;margin:4px 16px;}
 .markup-slider::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:var(--orange);cursor:pointer;box-shadow:0 2px 8px rgba(245,118,26,0.4);}
 .note-card{background:#FEF3E5;border:1.5px solid rgba(245,118,26,0.3);border-radius:var(--radius-md);padding:12px 16px;margin-bottom:12px;font-size:13px;color:var(--grey-dark);line-height:1.5;}
+/* Square Metre Analysis Card */
+.sqm-card{background:var(--black);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-md);margin-bottom:12px;}
+.sqm-head{padding:10px 16px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;}
+.sqm-head-text{font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.8px;}
+.sqm-area-tag{font-size:13px;font-weight:700;color:var(--orange-light);}
+.sqm-rate-row{display:flex;align-items:center;gap:10px;padding:16px 16px 14px;border-bottom:1px solid rgba(255,255,255,0.08);}
+.sqm-rate-label{font-size:13px;font-weight:700;color:rgba(255,255,255,0.5);flex-shrink:0;}
+.sqm-rate-input{width:96px;height:48px;background:rgba(255,255,255,0.10);border:2px solid rgba(255,255,255,0.12);border-radius:10px;text-align:center;font-size:22px;font-weight:800;color:var(--white);-webkit-appearance:none;appearance:none;}
+.sqm-rate-input:focus{border-color:var(--orange);background:rgba(245,118,26,0.12);outline:none;}
+.sqm-rate-input::placeholder{color:rgba(255,255,255,0.25);}
+.sqm-rate-unit{font-size:14px;font-weight:600;color:rgba(255,255,255,0.4);}
+.sqm-total-value{flex:1;text-align:right;font-size:24px;font-weight:800;color:var(--white);}
+.sqm-analysis-row{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,0.07);}
+.sqm-al{font-size:13px;color:rgba(255,255,255,0.5);font-weight:500;}
+.sqm-av{font-size:14px;font-weight:700;color:rgba(255,255,255,0.85);}
+.sqm-profit-row{display:flex;align-items:center;justify-content:space-between;padding:16px 16px;border-bottom:1px solid rgba(255,255,255,0.07);}
+.sqm-profit-row.pos{background:rgba(5,150,105,0.18);}
+.sqm-profit-row.neg{background:rgba(239,68,68,0.18);}
+.sqm-pl{font-size:15px;font-weight:700;}
+.sqm-pl.pos{color:#34D399;}
+.sqm-pl.neg{color:#F87171;}
+.sqm-pv{font-size:22px;font-weight:800;}
+.sqm-pv.pos{color:#34D399;}
+.sqm-pv.neg{color:#F87171;}
+.sqm-divider{height:1px;background:rgba(255,255,255,0.05);margin:0;}
+.sqm-per-hr-row{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,0.07);}
+.sqm-per-hr-row:last-child{border-bottom:none;}
+.sqm-phl{font-size:13px;color:rgba(255,255,255,0.5);font-weight:500;}
+.sqm-phv{font-size:15px;font-weight:800;color:var(--orange-light);}
+.sqm-phv.na{color:rgba(255,255,255,0.3);font-weight:600;}
 .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .action-grid .btn-primary{grid-column:1/-1;}
 /* Specs card */
@@ -573,7 +603,7 @@ function renderQuotesList() {
   }).join('');
 }
 function startNewQuote() {
-  APP.currentQuote = { id:'q_'+Date.now(), client:{}, deck:null, height:null, material:null, pricing:null, total:null, labourItems:[], createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
+  APP.currentQuote = { id:'q_'+Date.now(), client:{}, deck:null, height:null, material:null, pricing:null, total:null, labourItems:[], sqmRate:0, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString() };
   APP.specs = { postSpacing:'auto', postType:'timber', bearerOvr:null, joistOvr:null };
   APP.specsOpen = false;
   resetSketch(); clearClientForm(); navigateTo('client');
@@ -1333,12 +1363,49 @@ function renderQuoteScreen(pr){
   html+='<div class="totals-row"><div class="totals-label">GST (10%)</div><div class="totals-value">'+fmt(pr.gst)+'</div></div>';
   html+='<div class="totals-row grand"><div class="totals-label">TOTAL inc GST</div><div class="totals-value">'+fmt(pr.totalIncGST)+'</div></div>';
   html+='</div>';
+  // ── Square Metre Analysis Card ──
+  const sqRate=q.sqmRate||0;
+  const sqTotal=sqRate*pr.area;
+  const actualCost=pr.materialsCost+pr.labourCost;
+  const profit=sqTotal-actualCost;
+  const hasRate=sqRate>0;
+  const labItems2=q.labourItems||[];
+  const totalHrs=labItems2.reduce((s,li)=>s+(li.days*8+li.hours),0);
+  const profitPerHr=(hasRate&&totalHrs>0)?(profit/totalHrs):null;
+  // Find Paul (case-insensitive name match) in this quote's labour items
+  const paulItem=labItems2.find(li=>li.name.trim().toLowerCase()==='paul');
+  let profitPaulPerHr=null;
+  if(paulItem){
+    const paulHrs=paulItem.days*8+paulItem.hours;
+    if(hasRate&&paulHrs>0){
+      const paulBase=paulHrs*paulItem.hourlyRate;
+      const paulWages=paulBase+(paulItem.superIncluded?0:paulBase*0.115);
+      profitPaulPerHr=(profit+paulWages)/paulHrs;
+    }
+  }
+  const profCls=profit>=0?'pos':'neg';
+  const fmtHr=v=>v===null?null:'$'+Math.round(v)+'/hr';
+  html+='<div class="sqm-card fade-in">';
+  html+='<div class="sqm-head"><div class="sqm-head-text">Square Metre Quote</div><div class="sqm-area-tag">'+pr.area.toFixed(1)+' m²</div></div>';
+  html+='<div class="sqm-rate-row"><div class="sqm-rate-label">Rate</div>';
+  html+='<input class="sqm-rate-input" type="number" value="'+(sqRate||'')+'" placeholder="0" min="0" step="5" inputmode="decimal" oninput="updateSqmRate(this.value)">';
+  html+='<div class="sqm-rate-unit">/m²</div>';
+  html+='<div class="sqm-total-value">'+(hasRate?fmt(sqTotal):'—')+'</div></div>';
+  // Analysis rows
+  html+='<div class="sqm-analysis-row"><div class="sqm-al">Your costs (materials + labour)</div><div class="sqm-av">'+fmt(actualCost)+'</div></div>';
+  html+='<div class="sqm-analysis-row"><div class="sqm-al">Square metre quote</div><div class="sqm-av">'+(hasRate?fmt(sqTotal):'enter rate above')+'</div></div>';
+  html+='<div class="sqm-profit-row '+(hasRate?profCls:'')+'"><div class="sqm-pl '+(hasRate?profCls:'sqm-al')+'">Profit / Loss</div><div class="sqm-pv '+(hasRate?profCls:'sqm-av')+'">'+(hasRate?(profit>=0?'+':'')+fmt(profit):'—')+'</div></div>';
+  html+='<div class="sqm-per-hr-row"><div class="sqm-phl">Total hours on job</div><div class="sqm-phv '+(totalHrs===0?'na':'')+'">'+(totalHrs>0?totalHrs+'h':'No staff added')+'</div></div>';
+  html+='<div class="sqm-per-hr-row"><div class="sqm-phl">Profit per hour</div><div class="sqm-phv '+(profitPerHr===null?'na':'')+'">'+(profitPerHr!==null?fmtHr(profitPerHr):'N/A')+'</div></div>';
+  html+='<div class="sqm-per-hr-row"><div class="sqm-phl">Profit &amp; Paul per hour</div><div class="sqm-phv '+(profitPaulPerHr===null?'na':'')+'">'+(profitPaulPerHr!==null?fmtHr(profitPaulPerHr):'N/A')+'</div></div>';
+  html+='</div>';
   if(pr.notes.length)pr.notes.forEach(n=>{html+='<div class="note-card">⚠️ '+n+'</div>';});
   document.getElementById('quoteScreenBody').innerHTML=html;
 }
 
 function fmt(n){return '$'+(n||0).toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function updateLabourRate(v){APP.labourRate=parseFloat(v)||0;rerender();}
+function updateSqmRate(v){if(APP.currentQuote)APP.currentQuote.sqmRate=parseFloat(v)||0;rerender();}
 function updateMarkup(v){APP.markup=v/100;rerender();}
 function toggleSpecs(){APP.specsOpen=!APP.specsOpen;rerender();}
 function setPostType(v){APP.specs.postType=v;rerender();}
