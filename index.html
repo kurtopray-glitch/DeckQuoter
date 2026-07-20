@@ -1437,7 +1437,7 @@ function renderQuoteScreen(pr){
   html+='<div class="sqm-card fade-in">';
   html+='<div class="sqm-head"><div class="sqm-head-text">Square Metre Quote</div><div class="sqm-area-tag">'+pr.area.toFixed(1)+' m²</div></div>';
   html+='<div class="sqm-rate-row"><div class="sqm-rate-label">Rate</div>';
-  html+='<input class="sqm-rate-input" type="number" value="'+(sqRate||'')+'" placeholder="0" min="0" step="5" inputmode="decimal" oninput="updateSqmRate(this.value)">';
+  html+='<input class="sqm-rate-input" type="number" value="'+(sqRate||'')+'" placeholder="0" min="0" step="5" inputmode="decimal" onblur="updateSqmRate(this.value)" onkeydown="if(event.key===\'Enter\'){updateSqmRate(this.value);this.blur();}">';
   html+='<div class="sqm-rate-unit">/m²</div>';
   html+='<div class="sqm-total-value">'+(hasRate?fmt(sqTotal):'—')+'</div></div>';
   // Analysis rows
