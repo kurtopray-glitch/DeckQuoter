@@ -62,6 +62,9 @@ button{cursor:pointer;border:none;background:none;}
 .progress-step::after{content:'';position:absolute;top:11px;left:50%;width:100%;height:2px;background:rgba(255,255,255,0.15);}
 .progress-step:last-child::after{display:none;}
 .progress-step.done::after{background:var(--orange);}
+.progress-step.done{cursor:pointer;-webkit-user-select:none;user-select:none;}
+.h-sel-btn{padding:8px 14px;border-radius:20px;font-size:14px;font-weight:700;color:var(--grey-dark);background:var(--grey-pale);border:2px solid transparent;transition:all var(--transition);}
+.h-sel-btn.active{background:var(--orange);color:var(--white);border-color:var(--orange);box-shadow:0 2px 8px rgba(245,118,26,0.35);}
 .step-dot{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);position:relative;z-index:1;transition:all var(--transition);}
 .progress-step.active .step-dot{background:var(--orange);color:var(--white);}
 .progress-step.done .step-dot{background:var(--orange);color:var(--white);}
@@ -392,52 +395,27 @@ button{cursor:pointer;border:none;background:none;}
     </div>
     <div class="canvas-hint" id="canvasHint">Tap to place the first corner</div>
   </div>
+  <div id="heightPanel" style="display:none;background:var(--white);border-top:1px solid var(--grey-light);padding:14px 16px 10px;">
+    <div style="font-size:11px;font-weight:700;color:var(--grey);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:10px;">Mark Heights — tap a height then tap inside the sketch</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+      <button class="h-sel-btn" data-h="0.3" onclick="selectHeight(0.3)">0.3m</button>
+      <button class="h-sel-btn" data-h="0.6" onclick="selectHeight(0.6)">0.6m</button>
+      <button class="h-sel-btn" data-h="0.9" onclick="selectHeight(0.9)">0.9m</button>
+      <button class="h-sel-btn" data-h="1.2" onclick="selectHeight(1.2)">1.2m</button>
+      <button class="h-sel-btn" data-h="1.5" onclick="selectHeight(1.5)">1.5m</button>
+      <button class="h-sel-btn" data-h="1.8" onclick="selectHeight(1.8)">1.8m</button>
+      <button class="h-sel-btn" data-h="2.4" onclick="selectHeight(2.4)">2.4m</button>
+      <button class="h-sel-btn" data-h="3.0" onclick="selectHeight(3.0)">3.0m</button>
+    </div>
+    <div class="caption" id="heightModeHint">Select a height above, then tap inside the sketch to place a marker</div>
+  </div>
   <div class="sticky-footer">
     <div class="flex-row">
       <button class="btn btn-ghost hidden" id="closeShapeBtn" onclick="closeShape()">Close Shape</button>
-      <button class="btn btn-primary hidden" id="sketchNextBtn" onclick="goToHeight()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg> Continue</button>
+      <button class="btn btn-primary hidden" id="sketchNextBtn" onclick="goToMaterials()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg> Continue</button>
     </div>
     <div class="caption text-center mt-8" id="sketchCaption">Tap corners of the deck in order. Enter each side length when prompted.</div>
   </div>
-</div>
-
-<!-- ═══ HEIGHT ═══ -->
-<div id="screen-height" class="screen">
-  <div class="app-header"><div class="header-inner"><button class="back-btn" onclick="goBack()"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 4 6 10 12 16"/></svg>Back</button><div class="header-title">Deck Height</div><div style="width:56px"></div></div><div class="progress-bar"><div class="progress-step done"><div class="step-dot">&#10003;</div><div class="step-label">Client</div></div><div class="progress-step done"><div class="step-dot">&#10003;</div><div class="step-label">Sketch</div></div><div class="progress-step active"><div class="step-dot">3</div><div class="step-label">Height</div></div><div class="progress-step "><div class="step-dot">4</div><div class="step-label">Materials</div></div><div class="progress-step "><div class="step-dot">5</div><div class="step-label">Quote</div></div></div></div>
-  <div class="screen-body padded-bottom">
-    <div class="height-visual fade-in">
-      <div class="height-deck"></div>
-      <div class="height-post" id="heightPostLeft" style="height:55px;margin-top:72px;"></div>
-      <div class="height-post" id="heightPostRight" style="height:55px;margin-top:72px;"></div>
-      <div class="height-label" id="heightLabel">—</div>
-      <div class="height-ground"></div>
-    </div>
-    <div class="card fade-in fade-in-delay-1">
-      <div class="label">Height above ground</div>
-      <div class="flex-row" style="align-items:center;gap:14px;">
-        <input class="field-input" type="number" id="deckHeight" placeholder="1.2" step="0.1" min="0.1" max="5" inputmode="decimal" oninput="updateHeightVisual(this.value)" style="font-size:26px;font-weight:800;text-align:center;">
-        <div style="font-size:20px;font-weight:700;color:var(--grey);flex-shrink:0;">metres</div>
-      </div>
-      <div class="caption mt-8">Measure from finished deck surface to ground level</div>
-    </div>
-    <div class="card mt-12 fade-in fade-in-delay-2">
-      <div class="label">Quick Select</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        <button class="btn btn-ghost btn-sm" style="flex:none;width:auto;padding:0 16px;" onclick="setHeight(0.3)">Low (0.3m)</button>
-        <button class="btn btn-ghost btn-sm" style="flex:none;width:auto;padding:0 16px;" onclick="setHeight(0.6)">0.6m</button>
-        <button class="btn btn-ghost btn-sm" style="flex:none;width:auto;padding:0 16px;" onclick="setHeight(1.0)">1.0m</button>
-        <button class="btn btn-ghost btn-sm" style="flex:none;width:auto;padding:0 16px;" onclick="setHeight(1.8)">1.8m</button>
-        <button class="btn btn-ghost btn-sm" style="flex:none;width:auto;padding:0 16px;" onclick="setHeight(2.4)">2.4m</button>
-        <button class="btn btn-ghost btn-sm" style="flex:none;width:auto;padding:0 16px;" onclick="setHeight(4.0)">High (4m)</button>
-      </div>
-    </div>
-    <div class="card mt-12 fade-in fade-in-delay-3" style="background:rgba(245,118,26,0.04);border:1.5px solid rgba(245,118,26,0.15);">
-      <div class="label">Subframe spec</div>
-      <div id="heightInfoText" class="fw-700" style="font-size:16px;color:var(--black);">—</div>
-      <div class="caption mt-8" id="heightInfoSub">Enter height above to see recommended post size</div>
-    </div>
-  </div>
-  <div class="sticky-footer"><button class="btn btn-primary" onclick="submitHeight()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg> Continue to Materials</button></div>
 </div>
 
 <!-- ═══ MATERIALS ═══ -->
@@ -566,22 +544,78 @@ function showScreen(id) {
   const el = document.getElementById('screen-' + id);
   if (el) el.classList.add('active');
   APP.currentScreen = id;
+  updateProgressBars(id);
 }
-function navigateTo(id) { APP.screenHistory.push(APP.currentScreen); showScreen(id); if(id==='staff')renderStaffList(); if(id==='sketch')onShowSketch(); if(id==='height')onShowHeight(); }
-function goBack() { const id=APP.screenHistory.pop()||'home'; showScreen(id); if(id==='staff')renderStaffList(); if(id==='sketch')onShowSketch(); if(id==='height')onShowHeight(); }
+function navigateTo(id) { APP.screenHistory.push(APP.currentScreen); showScreen(id); if(id==='staff')renderStaffList(); if(id==='sketch')onShowSketch(); if(id==='materials')updateMaterialPrices(); }
+function goBack() { const id=APP.screenHistory.pop()||'home'; showScreen(id); if(id==='staff')renderStaffList(); if(id==='sketch')onShowSketch(); if(id==='materials')updateMaterialPrices(); }
+const FLOW_STEPS=[{id:'client',label:'Client'},{id:'sketch',label:'Sketch'},{id:'materials',label:'Materials'},{id:'quote',label:'Quote'}];
+function updateProgressBars(activeId){
+  const ai=FLOW_STEPS.findIndex(s=>s.id===activeId);
+  if(ai<0)return; // home, staff, etc — no progress bar
+  const html=FLOW_STEPS.map((s,i)=>{
+    const done=i<ai,active=i===ai;
+    const dot=done?'&#10003;':(i+1);
+    const cls=done?'done':(active?'active':'');
+    const click=done?'onclick="navigateTo(\''+s.id+'\')"':'';
+    return '<div class="progress-step '+cls+'" '+click+'><div class="step-dot">'+dot+'</div><div class="step-label">'+s.label+'</div></div>';
+  }).join('');
+  document.querySelectorAll('.progress-bar').forEach(pb=>pb.innerHTML=html);
+}
+function getDeckHeight(q){
+  const markers=q.deck&&q.deck.heightMarkers;
+  return(markers&&markers.length)?Math.max(...markers.map(m=>m.h)):(q.height||1.2);
+}
+function updateHeightPanelHint(){
+  const sk=APP.sketch,hint=document.getElementById('heightModeHint');
+  if(!hint)return;
+  hint.style.color='';
+  const n=(sk.heightMarkers||[]).length;
+  if(sk.activeHeight!==null){
+    hint.textContent=sk.activeHeight+'m selected — tap inside sketch to place marker (tap marker to remove)';
+  } else if(n>0){
+    hint.textContent=n+' marker'+(n>1?'s':'')+' placed. Select another height or Continue';
+  } else {
+    hint.textContent='Select a height above, then tap inside the sketch to place a marker';
+  }
+}
+function selectHeight(h){
+  const sk=APP.sketch;
+  sk.activeHeight=sk.activeHeight===h?null:h;
+  document.querySelectorAll('.h-sel-btn').forEach(btn=>btn.classList.toggle('active',parseFloat(btn.dataset.h)===sk.activeHeight));
+  updateHeightPanelHint();
+  redrawCanvas();
+}
+function placeHeightMarker(x,y){
+  const sk=APP.sketch;
+  if(!sk.closed||sk.activeHeight===null)return;
+  if(!sk.heightMarkers)sk.heightMarkers=[];
+  const HIT=28;
+  const hitIdx=sk.heightMarkers.findIndex(m=>Math.hypot(m.x-x,m.y-y)<HIT);
+  if(hitIdx>=0){
+    sk.heightMarkers.splice(hitIdx,1);
+  } else {
+    if(!pip(x,y,sk.points.map(p=>[p.x,p.y])))return;
+    sk.heightMarkers.push({x,y,h:sk.activeHeight});
+  }
+  saveSketchToQuote();saveCurrentQuote();
+  updateHeightPanelHint();redrawCanvas();
+}
 function onShowSketch() {
   resizeCanvas();
   const sk=APP.sketch;
-  const ci=document.getElementById('canvasInfo'),csb=document.getElementById('closeShapeBtn'),snb=document.getElementById('sketchNextBtn');
+  const ci=document.getElementById('canvasInfo'),csb=document.getElementById('closeShapeBtn'),snb=document.getElementById('sketchNextBtn'),hp=document.getElementById('heightPanel');
   if (sk.closed) {
     ci.classList.remove('hidden');ci.classList.add('visible');
     document.getElementById('areaDisplay').textContent=sk.area.toFixed(1);
     csb.classList.add('hidden');csb.style.display='none';
     snb.classList.remove('hidden');snb.style.display='';
+    hp.style.display='';
     document.getElementById('sketchCaption').textContent='Area: '+sk.area.toFixed(1)+' m² · Perimeter: '+sk.perimeter.toFixed(1)+' m';
+    updateHeightPanelHint();
   } else {
     ci.classList.add('hidden');ci.classList.remove('visible');
     snb.classList.add('hidden');snb.style.display='none';
+    hp.style.display='none';
     if(sk.points.length>=3){csb.classList.remove('hidden');csb.style.display='';}
     else{csb.classList.add('hidden');csb.style.display='none';}
     document.getElementById('sketchCaption').textContent=sk.points.length===0
@@ -589,11 +623,6 @@ function onShowSketch() {
       :'Tap to continue adding corners...';
   }
   updateHint();redrawCanvas();
-}
-function onShowHeight(){
-  const h=APP.currentQuote&&APP.currentQuote.height;
-  if(h){document.getElementById('deckHeight').value=h;updateHeightVisual(h);updateHeightInfo(h);}
-  else{document.getElementById('deckHeight').value='';updateHeightInfo(null);}
 }
 
 // ═══ HOME ═══
@@ -654,7 +683,9 @@ function restoreSketchFromDeck(deck) {
     points: deck.points.map(p => ({x:p.x,y:p.y})),
     segments: (deck.segments||[]).map(s => ({length:s.length})),
     closed: true, area: deck.area||0, perimeter: deck.perimeter||0,
-    scale: scale||null, pendingPoint: null, drag: null
+    scale: scale||null, pendingPoint: null, drag: null,
+    heightMarkers: (deck.heightMarkers||[]).map(m=>({...m})),
+    activeHeight: null
   };
 }
 
@@ -805,12 +836,13 @@ function resizeCanvas() {
   ctx.scale(dpr,dpr); redrawCanvas();
 }
 window.addEventListener('resize',resizeCanvas);
-function resetSketch() { APP.sketch={points:[],segments:[],closed:false,area:0,perimeter:0,scale:null,pendingPoint:null,drag:null}; }
+function resetSketch() { APP.sketch={points:[],segments:[],closed:false,area:0,perimeter:0,scale:null,pendingPoint:null,drag:null,heightMarkers:[],activeHeight:null}; }
 function onCanvasTap(e){} function onCanvasClick(e){} // legacy stubs (replaced below)
 function onTouchStart(e){
   e.preventDefault();
   const t=e.changedTouches[0],r=canvas.getBoundingClientRect();
   const x=t.clientX-r.left,y=t.clientY-r.top;
+  if(APP.sketch.closed&&APP.sketch.activeHeight!==null){placeHeightMarker(x,y);return;}
   if(!tryStartDrag(x,y))handleCanvasInput(x,y);
 }
 function onTouchMove(e){
@@ -823,6 +855,7 @@ function onTouchEnd(e){e.preventDefault();endDrag();}
 function onMouseDown(e){
   const r=canvas.getBoundingClientRect();
   const x=e.clientX-r.left,y=e.clientY-r.top;
+  if(APP.sketch.closed&&APP.sketch.activeHeight!==null){placeHeightMarker(x,y);return;}
   if(!tryStartDrag(x,y))handleCanvasInput(x,y);
 }
 function onMouseMove(e){if(!APP.sketch.drag)return;const r=canvas.getBoundingClientRect();doDrag(e.clientX-r.left,e.clientY-r.top);}
@@ -922,7 +955,9 @@ function confirmDimension() {
     document.getElementById('areaDisplay').textContent=sk.area.toFixed(1);
     document.getElementById('closeShapeBtn').classList.add('hidden');document.getElementById('closeShapeBtn').style.display='none';
     document.getElementById('sketchNextBtn').classList.remove('hidden');document.getElementById('sketchNextBtn').style.display='';
+    document.getElementById('heightPanel').style.display='';
     document.getElementById('sketchCaption').textContent='Area: '+sk.area.toFixed(1)+' m² · Perimeter: '+sk.perimeter.toFixed(1)+' m';
+    updateHeightPanelHint();
   } else {
     sk.points.push({x:ex,y:ey}); sk.segments.push({length:val}); sk.pendingPoint=null;
     if (sk.points.length>=3){document.getElementById('closeShapeBtn').classList.remove('hidden');document.getElementById('closeShapeBtn').style.display='';}
@@ -941,9 +976,10 @@ function doCloseShape(){
   const csb=document.getElementById('closeShapeBtn'),snb=document.getElementById('sketchNextBtn');
   csb.classList.add('hidden');csb.style.display='none';
   snb.classList.remove('hidden');snb.style.display='';
+  document.getElementById('heightPanel').style.display='';
   document.getElementById('sketchCaption').textContent='Area: '+sk.area.toFixed(1)+' m² · Perimeter: '+sk.perimeter.toFixed(1)+' m';
   saveSketchToQuote();saveCurrentQuote();
-  updateHint();redrawCanvas();
+  updateHeightPanelHint();updateHint();redrawCanvas();
 }
 function closeShape(){doCloseShape();}
 function computeArea(){
@@ -1026,6 +1062,20 @@ function redrawCanvas(){
       ctx.restore();
     }
   }
+  // Height markers
+  if(sk.closed&&sk.heightMarkers&&sk.heightMarkers.length){
+    sk.heightMarkers.forEach(m=>{
+      ctx.save();
+      ctx.beginPath();ctx.arc(m.x,m.y,22,0,Math.PI*2);
+      ctx.fillStyle='#1A1A1A';ctx.fill();
+      ctx.strokeStyle=m.h===sk.activeHeight?'#FF9244':'#F5761A';ctx.lineWidth=2.5;ctx.stroke();
+      ctx.fillStyle=m.h===sk.activeHeight?'#FF9244':'#F5761A';
+      ctx.font='bold 11px -apple-system,system-ui,sans-serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(m.h+'m',m.x,m.y);
+      ctx.restore();
+    });
+  }
   // snap ring on first point when shape is open
   if(sk.points.length>=3&&!sk.closed){
     const fp=sk.points[0];
@@ -1045,7 +1095,7 @@ function updateHint(){
 function undoLastPoint(){
   const sk=APP.sketch;
   const csb=document.getElementById('closeShapeBtn'),snb=document.getElementById('sketchNextBtn');
-  if(sk.closed){sk.closed=false;snb.classList.add('hidden');snb.style.display='none';}
+  if(sk.closed){sk.closed=false;snb.classList.add('hidden');snb.style.display='none';document.getElementById('heightPanel').style.display='none';}
   if(sk.points.length>1){sk.points.pop();sk.segments.pop();}
   else if(sk.points.length===1)sk.points=[];
   if(sk.points.length>=3){csb.classList.remove('hidden');csb.style.display='';}
@@ -1058,6 +1108,8 @@ function clearSketch(){
   const csb=document.getElementById('closeShapeBtn'),snb=document.getElementById('sketchNextBtn');
   csb.classList.add('hidden');csb.style.display='none';
   snb.classList.add('hidden');snb.style.display='none';
+  document.getElementById('heightPanel').style.display='none';
+  document.querySelectorAll('.h-sel-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('canvasInfo').classList.remove('visible');
   document.getElementById('sketchCaption').textContent='Tap corners of the deck in order. Enter each side length when prompted.';
   updateHint();redrawCanvas();
@@ -1065,40 +1117,17 @@ function clearSketch(){
 function saveSketchToQuote(){
   const sk=APP.sketch;
   if(APP.currentQuote&&sk.closed)
-    APP.currentQuote.deck={points:sk.points.map(p=>({x:p.x,y:p.y})),segments:sk.segments.map(s=>({length:s.length})),area:sk.area,perimeter:sk.perimeter,scale:sk.scale};
+    APP.currentQuote.deck={points:sk.points.map(p=>({x:p.x,y:p.y})),segments:sk.segments.map(s=>({length:s.length})),area:sk.area,perimeter:sk.perimeter,scale:sk.scale,heightMarkers:(sk.heightMarkers||[]).map(m=>({...m}))};
 }
-function goToHeight(){
+function goToMaterials(){
   const sk=APP.sketch;if(!sk.closed||sk.area<=0)return;
-  saveSketchToQuote();
-  saveCurrentQuote();navigateTo('height');
-}
-
-// ═══ HEIGHT ═══
-function setHeight(h){document.getElementById('deckHeight').value=h;updateHeightVisual(h);}
-function updateHeightVisual(h){
-  const v=parseFloat(h)||0,maxH=130,minH=16;
-  const ph=Math.min(maxH,Math.max(minH,v*28)),top=50+(130-ph);
-  ['heightPostLeft','heightPostRight'].forEach(id=>{
-    document.getElementById(id).style.height=ph+'px';
-    document.getElementById(id).style.marginTop=top+'px';
-  });
-  document.getElementById('heightLabel').textContent=v.toFixed(1)+'m';
-  updateHeightInfo(v);
-}
-function updateHeightInfo(h){
-  const el=document.getElementById('heightInfoText'),sub=document.getElementById('heightInfoSub');
-  if(!h||h<=0){el.textContent='—';sub.textContent='Enter height above to see recommended post size';return;}
-  let ps,note;
-  if(h<=1.0){ps='90×90mm H4 posts';note='Low-level deck. No bracing required.';}
-  else if(h<=2.0){ps='140×140mm H4 posts';note='Mid-height. Diagonal bracing may be required per council.';}
-  else if(h<=3.0){ps='140×140mm H4 posts + bracing';note='Engineer certification recommended above 2.5m in SA.';}
-  else{ps='140×140mm H4 posts + engineer cert';note='Above 3m: engineer certification required in SA.';}
-  el.textContent=ps;sub.textContent=note;
-}
-function submitHeight(){
-  const v=parseFloat(document.getElementById('deckHeight').value);
-  if(!v||v<=0){document.getElementById('deckHeight').classList.add('error');setTimeout(()=>document.getElementById('deckHeight').classList.remove('error'),800);return;}
-  APP.currentQuote.height=v;saveCurrentQuote();navigateTo('materials');updateMaterialPrices();
+  if(!sk.heightMarkers||!sk.heightMarkers.length){
+    const hint=document.getElementById('heightModeHint');
+    hint.textContent='Please add at least one height marker before continuing';
+    hint.style.color='var(--red)';
+    return;
+  }
+  saveSketchToQuote();saveCurrentQuote();navigateTo('materials');
 }
 
 // ═══ MATERIALS ═══
@@ -1236,7 +1265,8 @@ function specWarnings(bSize,jSize,postSpM,jSpac){
 }
 
 function computeQuote(){
-  const q=APP.currentQuote,{deck,height,material}=q,{area,segments,perimeter}=deck;
+  const q=APP.currentQuote,{deck,material}=q,{area,segments,perimeter}=deck;
+  const height=getDeckHeight(q);
   const dims=estimateDims(segments,area),deckW=Math.min(dims.w,dims.l),deckL=Math.max(dims.w,dims.l);
   const isComp=['ekodeck-classic','ekodeck-plus'].includes(material);
   const jSpac=isComp?300:450;
@@ -1299,7 +1329,7 @@ function computeQuote(){
   if(height>2.5)notes.push('Engineer certification required for decks above 2.5m in SA');
   if(height>1.0)notes.push('Check council permit requirements for elevated decks');
   specWarnings(bSize,jSize,postSpM,jSpac).forEach(w=>notes.push('Spec: '+w));
-  return{items,materialsCost:matCost,labourCost,subtotal:sub,markupAmt:mkAmt,totalExGST:exGST,gst,totalIncGST:total,jSize,bSize,postLabel,joistSpacingMm:jSpac,nPosts,nJoists,deckW,deckL,area,perimeter,notes,postSpM,isMetal};
+  return{items,materialsCost:matCost,labourCost,subtotal:sub,markupAmt:mkAmt,totalExGST:exGST,gst,totalIncGST:total,jSize,bSize,postLabel,joistSpacingMm:jSpac,nPosts,nJoists,deckW,deckL,area,perimeter,notes,postSpM,isMetal,height};
 }
 
 // ═══ RENDER QUOTE ═══
@@ -1376,7 +1406,7 @@ function renderQuoteScreen(pr){
   html+='<div class="deck-specs-row fade-in">';
   html+='<div class="spec-chip"><div class="spec-chip-value">'+pr.area.toFixed(1)+'</div><div class="spec-chip-label">m² Area</div></div>';
   html+='<div class="spec-chip"><div class="spec-chip-value">'+pr.deckL.toFixed(1)+'×'+pr.deckW.toFixed(1)+'</div><div class="spec-chip-label">Metres</div></div>';
-  html+='<div class="spec-chip"><div class="spec-chip-value">'+q.height+'m</div><div class="spec-chip-label">Height</div></div>';
+  html+='<div class="spec-chip"><div class="spec-chip-value">'+pr.height.toFixed(1)+'m</div><div class="spec-chip-label">Max Height</div></div>';
   html+='</div>';
   html+='<div class="line-items-card fade-in fade-in-delay-1"><div class="li-section-head"><div class="li-section-head-text">Materials & Subframe</div></div>';
   pr.items.forEach(item=>{
@@ -1570,7 +1600,7 @@ function buildDiagrams(q, p, LOGO) {
   });
 
   // ── Page header helper ──
-  const hdr=(title,sub)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:2.5px solid #F5761A;margin-bottom:14px;"><div style="display:flex;align-items:center;gap:14px;"><img style="width:52px;height:52px;border-radius:50%;" src="${LOGO}"><div><div style="font-size:17px;font-weight:800;color:#1A1A1A;">${title}</div><div style="font-size:11px;color:#6B7280;margin-top:2px;">${sub}</div></div></div><div style="text-align:right;font-size:11px;color:#6B7280;line-height:1.7;">${deck.area.toFixed(1)} m² · Height ${q.height}m<br>${materialLabel(q.material)}</div></div>`;
+  const hdr=(title,sub)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:2.5px solid #F5761A;margin-bottom:14px;"><div style="display:flex;align-items:center;gap:14px;"><img style="width:52px;height:52px;border-radius:50%;" src="${LOGO}"><div><div style="font-size:17px;font-weight:800;color:#1A1A1A;">${title}</div><div style="font-size:11px;color:#6B7280;margin-top:2px;">${sub}</div></div></div><div style="text-align:right;font-size:11px;color:#6B7280;line-height:1.7;">${deck.area.toFixed(1)} m² · Height ${getDeckHeight(q)}m<br>${materialLabel(q.material)}</div></div>`;
 
   const csub=q.client.firstName+' '+q.client.surname+' · '+q.client.address;
   const bDir=horiz?'Boards run →':'Boards run ↓';
@@ -1621,7 +1651,7 @@ function previewPDF(){
   '<div class="hdr"><div class="hdr-l"><img class="logo" src="'+LOGO+'"><div><div class="co">Paul\'s Decking <span>&amp; Pergolas</span></div><div class="co-sub">Adelaide\'s best · www.paulsdeckingandpergolas.com.au</div></div></div>'+
   '<div><div class="ql">QUOTE</div><div class="qn">'+qNum+'<br>'+dateStr+'</div></div></div>'+
   '<div class="mg"><div class="mb"><h3>Client</h3><p>'+c.firstName+' '+c.surname+'</p><p class="sub">'+c.address+'</p>'+(c.mobile?'<p class="sub">'+c.mobile+'</p>':'')+(c.email?'<p class="sub">'+c.email+'</p>':'')+'</div>'+
-  '<div class="mb"><h3>Deck Specification</h3><p>'+materialLabel(q.material)+'</p><p class="sub">Area: '+d.area.toFixed(1)+' m² · Height: '+q.height+'m</p><p class="sub">Joists: '+p.jSize+' @ '+p.joistSpacingMm+'mm ctrs</p><p class="sub">Bearers: '+p.bSize+' · Posts: '+p.postLabel+'</p></div></div>'+
+  '<div class="mb"><h3>Deck Specification</h3><p>'+materialLabel(q.material)+'</p><p class="sub">Area: '+d.area.toFixed(1)+' m² · Height: '+p.height.toFixed(1)+'m</p><p class="sub">Joists: '+p.jSize+' @ '+p.joistSpacingMm+'mm ctrs</p><p class="sub">Bearers: '+p.bSize+' · Posts: '+p.postLabel+'</p></div></div>'+
   '<div class="scope"><h3>Scope of Works</h3><p>Supply and install '+materialLabel(q.material)+' deck ('+d.area.toFixed(1)+' m²) at '+c.address+'. Includes full treated pine subframe (joists, bearers, posts), galvanised hardware, and all fixings to Australian Standard AS 1684.</p></div>'+
   p.notes.map(n=>'<div class="note">⚠ '+n+'</div>').join('')+
   '<table><thead><tr><th>Item</th><th class="tc">Quantity</th><th class="tr">Amount</th></tr></thead><tbody>'+
@@ -1648,7 +1678,7 @@ function emailQuote(){
 'QUOTE SUMMARY\n─────────────────────\n'+
 'Deck area:   '+p.area.toFixed(1)+' m²\n'+
 'Material:    '+materialLabel(q.material)+'\n'+
-'Height:      '+q.height+'m\n'+
+'Height:      '+p.height.toFixed(1)+'m\n'+
 '─────────────────────\n'+
 'Total (inc GST):  '+fmt(p.totalIncGST)+'\n'+
 '─────────────────────\n\n'+
@@ -1662,7 +1692,7 @@ function emailQuote(){
 function copyToTradify(){
   const q=APP.currentQuote,p=q.pricing||computeQuote(),c=q.client;
   const text='JOB: Deck — '+c.address+'\nCLIENT: '+c.firstName+' '+c.surname+' | '+c.mobile+(c.email?' | '+c.email:'')+'\n\n'+
-'SCOPE: Supply & install '+materialLabel(q.material)+' deck '+p.area.toFixed(1)+'m² at '+p.deckL.toFixed(1)+'×'+p.deckW.toFixed(1)+'m, height '+q.height+'m. Full treated pine subframe — '+p.jSize+' joists @ '+p.joistSpacingMm+'mm, '+p.bSize+' bearers, '+p.postLabel+' posts.\n\n'+
+'SCOPE: Supply & install '+materialLabel(q.material)+' deck '+p.area.toFixed(1)+'m² at '+p.deckL.toFixed(1)+'×'+p.deckW.toFixed(1)+'m, height '+p.height.toFixed(1)+'m. Full treated pine subframe — '+p.jSize+' joists @ '+p.joistSpacingMm+'mm, '+p.bSize+' bearers, '+p.postLabel+' posts.\n\n'+
 'MATERIALS:         '+fmt(p.materialsCost)+'\nLABOUR:            '+fmt(p.labourCost)+'\nTOTAL EX GST:      '+fmt(p.totalExGST)+'\nGST:               '+fmt(p.gst)+'\nTOTAL INC GST:     '+fmt(p.totalIncGST)+'\n\nQuote valid 30 days.';
   navigator.clipboard.writeText(text).then(()=>{
     const btn=event.currentTarget;const orig=btn.innerHTML;
